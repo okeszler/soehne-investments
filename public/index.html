@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dein Kapital</title>
+<link rel="stylesheet" href="/css/style.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<div id="login-screen" class="login-screen">
+  <div class="login-card">
+    <div class="login-eyebrow">Zugang</div>
+    <h1 class="login-title">Dein Kapital</h1>
+    <form id="login-form">
+      <input id="pin-input" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="off" autofocus>
+      <button type="submit" class="pin-submit">Einloggen</button>
+    </form>
+    <div id="login-error" class="login-error"></div>
+  </div>
+</div>
+
+<div id="dashboard" class="app-shell" style="display:none;">
+  <div class="app-header">
+    <div>
+      <div class="greeting" id="greeting">Hallo</div>
+      <div class="subtitle">Stand von heute</div>
+    </div>
+    <button class="logout-link" id="logout-btn">Abmelden</button>
+  </div>
+
+  <div class="stamp-card">
+    <div class="stamp-eyebrow"><span>Kontostand</span><span id="stamp-date"></span></div>
+    <div class="stamp-balance" id="balance-amount">€ 0,00</div>
+    <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span> · <span id="rate-display"></span> p.a.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Verlauf</div>
+    <canvas id="history-chart" height="180"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Fiktive Hochrechnung (Zinseszins)</div>
+    <div class="horizon-tabs" id="horizon-tabs">
+      <button class="horizon-tab" data-years="1">1 Jahr</button>
+      <button class="horizon-tab active" data-years="5">5 Jahre</button>
+      <button class="horizon-tab" data-years="10">10 Jahre</button>
+      <button class="horizon-tab" data-years="20">20 Jahre</button>
+    </div>
+    <canvas id="projection-chart" height="180"></canvas>
+    <div class="projection-footnote" id="projection-footnote"></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Bewegungen</div>
+    <table class="ledger-table" id="ledger-table">
+      <thead>
+        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+      </thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+  </div>
+</div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>
