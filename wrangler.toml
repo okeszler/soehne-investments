@@ -1,0 +1,8 @@
+name = "soehne-investment"
+compatibility_date = "2026-07-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "soehne-investment"
+database_id = "REPLACE_MIT_DEINER_DATABASE_ID"
