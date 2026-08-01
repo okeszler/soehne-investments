@@ -63,6 +63,17 @@
     </table>
     <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
   </div>
+
+  <div class="section">
+    <div class="section-title">PIN ändern</div>
+    <form id="pin-change-form" class="pin-change-form">
+      <input id="current-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Aktuelle PIN" autocomplete="off">
+      <input id="new-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Neue PIN" autocomplete="off">
+      <input id="new-pin-confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Neue PIN wiederholen" autocomplete="off">
+      <button type="submit" class="admin-submit">PIN ändern</button>
+    </form>
+    <div id="pin-change-message" class="pin-change-message"></div>
+  </div>
 </div>
 
 <script src="/js/app.js"></script>

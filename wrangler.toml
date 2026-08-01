@@ -5,4 +5,4 @@ pages_build_output_dir = "public"
 [[d1_databases]]
 binding = "DB"
 database_name = "soehne-investment"
-database_id = "REPLACE_MIT_DEINER_DATABASE_ID"
+database_id = "924c6355-a172-4b75-a8d0-6358369d7bf8"

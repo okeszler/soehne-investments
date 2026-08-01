@@ -162,4 +162,34 @@ function renderLedger() {
   }).join('');
 }
 
+document.getElementById('pin-change-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const currentPin = document.getElementById('current-pin').value;
+  const newPin = document.getElementById('new-pin').value;
+  const newPinConfirm = document.getElementById('new-pin-confirm').value;
+  const msgEl = document.getElementById('pin-change-message');
+  msgEl.textContent = '';
+  msgEl.classList.remove('pin-change-success');
+
+  if (newPin !== newPinConfirm) {
+    msgEl.textContent = 'Neue PIN stimmt nicht mit der Wiederholung überein.';
+    return;
+  }
+
+  const res = await fetch('/api/change-pin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ currentPin, newPin })
+  });
+
+  const data = await res.json();
+  if (res.ok) {
+    msgEl.textContent = 'PIN erfolgreich geändert.';
+    msgEl.classList.add('pin-change-success');
+    document.getElementById('pin-change-form').reset();
+  } else {
+    msgEl.textContent = data.error || 'PIN konnte nicht geändert werden.';
+  }
+});
+
 checkSession();
