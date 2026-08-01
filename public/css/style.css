@@ -1,15 +1,15 @@
 @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 :root {
-  --ink: #16232F;
-  --ink-soft: #2B3B4C;
-  --paper: #F3EEE0;
-  --paper-line: #DCD3B8;
-  --brass: #AD8A3D;
-  --brass-bright: #D4AF5A;
-  --sage: #4F6F52;
-  --rust: #A6412E;
-  --muted: #8B98A3;
+  --ink: #2A3132;
+  --ink-soft: #336B87;
+  --paper: #90AFC5;
+  --paper-line: #336B87;
+  --brass: #336B87;
+  --brass-bright: #90AFC5;
+  --sage: #336B87;
+  --rust: #763626;
+  --muted: #90AFC5;
 
   --font-display: 'Fraunces', serif;
   --font-body: 'IBM Plex Sans', sans-serif;
@@ -185,7 +185,7 @@ button:focus-visible, input:focus-visible {
   top: -60px;
   width: 180px;
   height: 180px;
-  border: 3px dashed rgba(173, 138, 61, 0.35);
+  border: 3px dashed rgba(51, 107, 135, 0.35);
   border-radius: 50%;
   transform: rotate(-12deg);
 }
@@ -269,8 +269,8 @@ canvas { max-width: 100%; }
 }
 
 .horizon-tab.active {
-  background: var(--brass);
-  border-color: var(--brass);
+  background: var(--brass-bright);
+  border-color: var(--brass-bright);
   color: var(--ink);
 }
 
@@ -346,7 +346,7 @@ canvas { max-width: 100%; }
 .admin-submit {
   grid-column: 1 / -1;
   padding: 12px;
-  background: var(--brass);
+  background: var(--brass-bright);
   color: var(--ink);
   border-radius: 3px;
   font-weight: 600;

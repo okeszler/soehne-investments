@@ -86,8 +86,8 @@ function renderHistoryChart() {
       labels,
       datasets: [{
         data: values,
-        borderColor: '#D4AF5A',
-        backgroundColor: 'rgba(212,175,90,0.12)',
+        borderColor: '#90AFC5',
+        backgroundColor: 'rgba(144,175,197,0.12)',
         fill: true,
         tension: 0.25,
         pointRadius: 0,
@@ -97,8 +97,8 @@ function renderHistoryChart() {
     options: {
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#8B98A3', maxTicksLimit: 6 }, grid: { display: false } },
-        y: { ticks: { color: '#8B98A3', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        x: { ticks: { color: '#90AFC5', maxTicksLimit: 6 }, grid: { display: false } },
+        y: { ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
       }
     }
   });
@@ -118,8 +118,8 @@ function renderProjectionChart(years) {
       labels,
       datasets: [{
         data: values,
-        borderColor: '#4F6F52',
-        backgroundColor: 'rgba(79,111,82,0.12)',
+        borderColor: '#336B87',
+        backgroundColor: 'rgba(51,107,135,0.12)',
         fill: true,
         tension: 0.3,
         pointRadius: 0,
@@ -130,7 +130,7 @@ function renderProjectionChart(years) {
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: { ticks: { color: '#8B98A3', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        y: { ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
       }
     }
   });
