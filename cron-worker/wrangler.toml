@@ -1,0 +1,13 @@
+name = "soehne-investment-cron"
+main = "index.js"
+compatibility_date = "2026-07-01"
+
+# Läuft täglich um 23:00 UTC an den möglichen Monatsletzten (28.-31.).
+# Der Handler prüft selbst, ob der Folgetag der 1. ist (= heute ist der echte Monatsletzte).
+[triggers]
+crons = ["0 23 28-31 * *"]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "soehne-investment"
+database_id = "924c6355-a172-4b75-a8d0-6358369d7bf8"
