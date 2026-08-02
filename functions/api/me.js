@@ -15,11 +15,18 @@ export async function onRequestGet({ request, env }) {
   const { balance, history } = computeBalanceHistory(txs || []);
   const dailyInterest = Math.round((balance * son.annual_rate / 365) * 100) / 100;
 
+  const { results: recurring } = await env.DB.prepare(
+    'SELECT type, amount FROM recurring_bookings WHERE son_id = ?'
+  ).bind(son.id).all();
+  const monthlyContribution = Math.round(
+    (recurring || []).reduce((sum, r) => sum + (r.type === 'withdrawal' ? -r.amount : r.amount), 0) * 100
+  ) / 100;
+
   const projections = {
-    '1': projectCompoundGrowth(balance, son.annual_rate, 1),
-    '5': projectCompoundGrowth(balance, son.annual_rate, 5),
-    '10': projectCompoundGrowth(balance, son.annual_rate, 10),
-    '20': projectCompoundGrowth(balance, son.annual_rate, 20)
+    '1': projectCompoundGrowth(balance, son.annual_rate, 1, monthlyContribution),
+    '5': projectCompoundGrowth(balance, son.annual_rate, 5, monthlyContribution),
+    '10': projectCompoundGrowth(balance, son.annual_rate, 10, monthlyContribution),
+    '20': projectCompoundGrowth(balance, son.annual_rate, 20, monthlyContribution)
   };
 
   return json({
@@ -27,6 +34,7 @@ export async function onRequestGet({ request, env }) {
     annualRate: son.annual_rate,
     balance,
     dailyInterest,
+    monthlyContribution,
     history,
     transactions: txs,
     projections

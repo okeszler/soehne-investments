@@ -165,8 +165,15 @@ function renderProjectionChart(years) {
 
   const start = currentData.balance;
   const end = points[points.length - 1].value;
+  const rateText = `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
+  const contribution = currentData.monthlyContribution || 0;
+  const contributionText = contribution > 0
+    ? ` und deiner automatischen monatlichen Zahlung von ${eur(contribution)} (z.B. Taschengeld)`
+    : contribution < 0
+      ? ` und deiner automatischen monatlichen Abbuchung von ${eur(Math.abs(contribution))}`
+      : ' und ohne weitere Ein-/Auszahlungen';
   document.getElementById('projection-footnote').textContent =
-    `Fiktiv: bei ${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a. und ohne weitere Ein-/Auszahlungen würde aus ${eur(start)} in ${years} Jahr(en) rechnerisch ${eur(end)} werden.`;
+    `Fiktiv: bei ${rateText}${contributionText} würde aus ${eur(start)} in ${years} Jahr(en) rechnerisch ${eur(end)} werden.`;
 }
 
 function renderLedger() {
