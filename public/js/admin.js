@@ -4,6 +4,7 @@ const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 
 
 let sons = [];
 let activeSonId = null;
+let recurring = [];
 
 async function checkSession() {
   const res = await fetch('/api/admin/sons');
@@ -63,7 +64,62 @@ async function selectSon(id) {
   document.getElementById('rate-input').value = (son.annual_rate * 100).toFixed(2);
   document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
   await loadTransactions();
+  await loadRecurring();
 }
+
+async function loadRecurring() {
+  const res = await fetch('/api/admin/recurring');
+  const data = await res.json();
+  recurring = (data.recurring || []).filter(r => r.son_id === activeSonId);
+  renderRecurring();
+}
+
+function renderRecurring() {
+  const body = document.getElementById('recurring-body');
+  const empty = document.getElementById('recurring-empty');
+
+  if (!recurring.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = recurring.map(r => {
+    const cls = r.type === 'deposit' ? 'tx-deposit' : r.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
+    return `<tr>
+      <td class="${cls}">${typeLabels[r.type]}</td>
+      <td class="${cls}">${eur(r.amount)}</td>
+      <td>${r.note || ''}</td>
+      <td><button class="tx-delete" data-id="${r.id}">Löschen</button></td>
+    </tr>`;
+  }).join('');
+
+  body.querySelectorAll('.tx-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await fetch(`/api/admin/recurring?id=${btn.dataset.id}`, { method: 'DELETE' });
+      await loadRecurring();
+    });
+  });
+}
+
+document.getElementById('recurring-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {
+    sonId: activeSonId,
+    type: document.getElementById('recurring-type').value,
+    amount: parseFloat(document.getElementById('recurring-amount').value),
+    note: document.getElementById('recurring-note').value
+  };
+  await fetch('/api/admin/recurring', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  document.getElementById('recurring-amount').value = '';
+  document.getElementById('recurring-note').value = '';
+  await loadRecurring();
+});
 
 async function loadTransactions() {
   const res = await fetch(`/api/admin/transactions?sonId=${activeSonId}`);

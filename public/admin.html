@@ -55,6 +55,25 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Automatische Buchung am 1. des Monats</div>
+    <form class="admin-form" id="recurring-form">
+      <select id="recurring-type" required>
+        <option value="deposit">Einzahlung</option>
+        <option value="withdrawal">Auszahlung</option>
+        <option value="interest">Zinsgutschrift</option>
+      </select>
+      <input type="number" id="recurring-amount" step="0.01" min="0" placeholder="Betrag in €" required>
+      <input type="text" id="recurring-note" class="full" placeholder="Notiz (z.B. Taschengeld)">
+      <button type="submit" class="admin-submit">Automatische Buchung anlegen</button>
+    </form>
+    <table class="ledger-table" id="recurring-table">
+      <thead><tr><th>Art</th><th>Betrag</th><th>Notiz</th><th></th></tr></thead>
+      <tbody id="recurring-body"></tbody>
+    </table>
+    <div class="empty-note" id="recurring-empty" style="display:none;">Keine automatische Buchung für diesen Sohn eingerichtet.</div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Bisherige Buchungen</div>
     <table class="ledger-table" id="tx-table">
       <thead><tr><th>Datum</th><th>Art</th><th>Betrag</th><th></th></tr></thead>
