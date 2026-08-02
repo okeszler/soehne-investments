@@ -117,35 +117,25 @@ function renderProjectionChart(years) {
   const points = currentData.projections[years];
   const ctx = document.getElementById('projection-chart');
 
-  const labels = points.map(p => `Monat ${p.month}`);
+  const labels = points.map(p => p.year === 0 ? 'Start' : `Jahr ${p.year}`);
   const capitalValues = points.map(p => p.capital);
   const interestValues = points.map(p => p.interest);
 
   if (projectionChart) projectionChart.destroy();
   projectionChart = new Chart(ctx, {
-    type: 'line',
+    type: 'bar',
     data: {
       labels,
       datasets: [
         {
           label: 'Kapital',
           data: capitalValues,
-          borderColor: '#336B87',
-          backgroundColor: 'rgba(51,107,135,0.25)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 2
+          backgroundColor: '#336B87'
         },
         {
-          label: 'Zinsen',
+          label: 'Zinsen (dieses Jahr)',
           data: interestValues,
-          borderColor: '#90AFC5',
-          backgroundColor: 'rgba(144,175,197,0.35)',
-          fill: true,
-          tension: 0.3,
-          pointRadius: 0,
-          borderWidth: 2
+          backgroundColor: '#90AFC5'
         }
       ]
     },
@@ -157,7 +147,7 @@ function renderProjectionChart(years) {
         }
       },
       scales: {
-        x: { ticks: { display: false }, grid: { display: false } },
+        x: { stacked: true, ticks: { color: '#90AFC5' }, grid: { display: false } },
         y: { stacked: true, ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
       }
     }

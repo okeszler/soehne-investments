@@ -94,20 +94,24 @@ export function computeBalanceHistory(transactions) {
 }
 
 // Zinseszins-Hochrechnung: Startkapital, Jahreszins, Anzahl Jahre, monatliche Sparrate (optional, hier 0)
-// Jeder Punkt liefert neben dem Gesamtwert die Aufteilung in Kapital (Vormonatswert + neue Einzahlung,
-// enthält also bereits alle zuvor gutgeschriebenen Zinsen) und den in diesem Monat neu verdienten Zins.
+// Rechnet monatlich (inkl. monatlicher Zinsgutschrift, die die Kapitalbasis erhöht), liefert aber pro
+// Jahr einen Punkt: Kapital = Wert vor den in diesem Jahr verdienten Zinsen, Zinsen = Summe der in
+// diesem Jahr gutgeschriebenen Monatszinsen (deutlich sichtbarer als ein einzelner Monatszins).
 export function projectCompoundGrowth(startCapital, annualRate, years, monthlyContribution = 0) {
   const monthlyRate = annualRate / 12;
   const round = (n) => Math.round(n * 100) / 100;
-  const points = [{ month: 0, value: round(startCapital), capital: round(startCapital), interest: 0 }];
+  const points = [{ year: 0, value: round(startCapital), capital: round(startCapital), interest: 0 }];
   let value = startCapital;
+  let yearInterest = 0;
   const totalMonths = Math.round(years * 12);
   for (let m = 1; m <= totalMonths; m++) {
     const capitalThisMonth = value + monthlyContribution;
     const interestThisMonth = capitalThisMonth * monthlyRate;
     value = capitalThisMonth + interestThisMonth;
-    if (m % 1 === 0) {
-      points.push({ month: m, value: round(value), capital: round(capitalThisMonth), interest: round(interestThisMonth) });
+    yearInterest += interestThisMonth;
+    if (m % 12 === 0) {
+      points.push({ year: m / 12, value: round(value), capital: round(value - yearInterest), interest: round(yearInterest) });
+      yearInterest = 0;
     }
   }
   return points;
