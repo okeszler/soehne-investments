@@ -133,7 +133,7 @@ function renderProjectionChart(years) {
           backgroundColor: '#336B87'
         },
         {
-          label: 'Zinsen (dieses Jahr)',
+          label: 'Zinsen',
           data: interestValues,
           backgroundColor: '#90AFC5'
         }
