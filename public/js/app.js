@@ -118,28 +118,47 @@ function renderProjectionChart(years) {
   const ctx = document.getElementById('projection-chart');
 
   const labels = points.map(p => `Monat ${p.month}`);
-  const values = points.map(p => p.value);
+  const capitalValues = points.map(p => p.capital);
+  const interestValues = points.map(p => p.interest);
 
   if (projectionChart) projectionChart.destroy();
   projectionChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
-      datasets: [{
-        data: values,
-        borderColor: '#336B87',
-        backgroundColor: 'rgba(51,107,135,0.12)',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        borderWidth: 2
-      }]
+      datasets: [
+        {
+          label: 'Kapital',
+          data: capitalValues,
+          borderColor: '#336B87',
+          backgroundColor: 'rgba(51,107,135,0.25)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2
+        },
+        {
+          label: 'Zinsen',
+          data: interestValues,
+          borderColor: '#90AFC5',
+          backgroundColor: 'rgba(144,175,197,0.35)',
+          fill: true,
+          tension: 0.3,
+          pointRadius: 0,
+          borderWidth: 2
+        }
+      ]
     },
     options: {
-      plugins: { legend: { display: false } },
+      plugins: {
+        legend: {
+          display: true,
+          labels: { color: '#90AFC5', boxWidth: 12, font: { size: 11 } }
+        }
+      },
       scales: {
         x: { ticks: { display: false }, grid: { display: false } },
-        y: { ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        y: { stacked: true, ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
       }
     }
   });
