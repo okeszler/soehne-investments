@@ -56,10 +56,14 @@ export function clearCookieHeader(name) {
 }
 
 export function json(data, init = {}) {
-  return new Response(JSON.stringify(data), {
-    headers: { 'Content-Type': 'application/json', ...(init.headers || {}) },
-    status: init.status || 200
-  });
+  const headers = new Headers({ 'Content-Type': 'application/json' });
+  if (init.headers) {
+    const extra = init.headers instanceof Headers ? init.headers : new Headers(init.headers);
+    for (const [key, value] of extra.entries()) {
+      headers.append(key, value);
+    }
+  }
+  return new Response(JSON.stringify(data), { headers, status: init.status || 200 });
 }
 
 export async function requireSonSession(request, env) {

@@ -54,15 +54,24 @@ function showDashboard() {
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('rate-display').textContent = `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}%`;
 
-  renderHistoryChart();
-  renderProjectionChart('5');
   renderLedger();
+
+  try {
+    renderHistoryChart();
+    renderProjectionChart('5');
+  } catch (err) {
+    console.error('Diagramme konnten nicht geladen werden:', err);
+  }
 
   document.querySelectorAll('.horizon-tab').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.horizon-tab').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      renderProjectionChart(btn.dataset.years);
+      try {
+        renderProjectionChart(btn.dataset.years);
+      } catch (err) {
+        console.error('Diagramm konnte nicht geladen werden:', err);
+      }
     });
   });
 }
