@@ -18,6 +18,23 @@
 
 * { box-sizing: border-box; }
 
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .login-card {
+    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+
+  .app-shell > .stamp-card,
+  .app-shell > .section {
+    animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--fade-i, 0) * 70ms);
+  }
+}
+
 html, body {
   margin: 0;
   padding: 0;
@@ -39,11 +56,21 @@ button {
   font-family: var(--font-body);
   cursor: pointer;
   border: none;
+  transition: background-color 0.18s ease, border-color 0.18s ease, color 0.18s ease, transform 0.12s ease, opacity 0.18s ease;
+}
+
+button:active {
+  transform: scale(0.97);
 }
 
 button:focus-visible, input:focus-visible {
   outline: 2px solid var(--brass-bright);
   outline-offset: 2px;
+  transition: outline-offset 0.15s ease;
+}
+
+input, select {
+  transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
 /* ---------- Login ---------- */
@@ -118,7 +145,7 @@ button:focus-visible, input:focus-visible {
   transition: background 0.15s ease;
 }
 
-.pin-submit:hover { background: var(--ink-soft); }
+.pin-submit:hover { background: var(--ink-soft); transform: translateY(-1px); }
 
 .login-error {
   color: var(--rust);
@@ -164,7 +191,10 @@ button:focus-visible, input:focus-visible {
   background: transparent;
   text-decoration: underline;
   text-underline-offset: 3px;
+  opacity: 0.85;
 }
+
+.logout-link:hover { opacity: 1; }
 
 /* ---------- Stamp / balance card ---------- */
 
@@ -268,6 +298,10 @@ canvas { max-width: 100%; }
   color: var(--paper);
 }
 
+.horizon-tab:hover:not(.active) {
+  border-color: rgba(255,255,255,0.35);
+}
+
 .horizon-tab.active {
   background: var(--brass-bright);
   border-color: var(--brass-bright);
@@ -308,6 +342,13 @@ canvas { max-width: 100%; }
 }
 
 .ledger-table tr:last-child td { border-bottom: none; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .ledger-table tbody tr {
+    animation: fadeSlideUp 0.35s ease both;
+    animation-delay: calc(var(--fade-i, 0) * 40ms);
+  }
+}
 
 .tx-deposit { color: var(--sage); }
 .tx-withdrawal { color: var(--rust); }
@@ -353,13 +394,18 @@ canvas { max-width: 100%; }
   font-size: 13px;
 }
 
+.admin-submit:hover { transform: translateY(-1px); opacity: 0.92; }
+
 .tx-delete {
   background: transparent;
   color: var(--rust);
   font-family: var(--font-mono);
   font-size: 11px;
   text-decoration: underline;
+  opacity: 0.85;
 }
+
+.tx-delete:hover { opacity: 1; }
 
 .son-picker {
   display: flex;
@@ -376,6 +422,8 @@ canvas { max-width: 100%; }
   background: transparent;
   color: var(--paper);
 }
+
+.son-pill:hover:not(.active) { border-color: rgba(255,255,255,0.35); }
 
 .son-pill.active { background: var(--paper); color: var(--ink); border-color: var(--paper); }
 

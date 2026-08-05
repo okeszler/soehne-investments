@@ -7,6 +7,34 @@ let currentData = null;
 let historyChart = null;
 let projectionChart = null;
 
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const chartAnimation = prefersReducedMotion ? false : { duration: 700, easing: 'easeOutQuart' };
+
+function animateNumber(el, to, formatFn) {
+  if (prefersReducedMotion) {
+    el.textContent = formatFn(to);
+    return;
+  }
+  const duration = 600;
+  const start = performance.now();
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    el.textContent = formatFn(to);
+  }
+  function tick(now) {
+    if (done) return;
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, 3);
+    el.textContent = formatFn(to * eased);
+    if (t < 1) requestAnimationFrame(tick);
+    else finish();
+  }
+  requestAnimationFrame(tick);
+  setTimeout(finish, duration + 150); // Sicherheitsnetz falls rAF ausgesetzt wird (z.B. Hintergrund-Tab)
+}
+
 async function checkSession() {
   const res = await fetch('/api/me');
   if (res.ok) {
@@ -50,9 +78,13 @@ function showDashboard() {
 
   document.getElementById('greeting').textContent = `Hallo ${currentData.name}`;
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
-  document.getElementById('balance-amount').textContent = eur(currentData.balance);
+  animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('rate-display').textContent = `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}%`;
+
+  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
+    el.style.setProperty('--fade-i', i);
+  });
 
   renderLedger();
 
@@ -104,6 +136,7 @@ function renderHistoryChart() {
       }]
     },
     options: {
+      animation: chartAnimation,
       plugins: { legend: { display: false } },
       scales: {
         x: { ticks: { color: '#90AFC5', maxTicksLimit: 6 }, grid: { display: false } },
@@ -140,6 +173,7 @@ function renderProjectionChart(years) {
       ]
     },
     options: {
+      animation: chartAnimation,
       plugins: {
         legend: {
           display: true,
@@ -176,10 +210,10 @@ function renderLedger() {
     return;
   }
 
-  body.innerHTML = txs.map(tx => {
+  body.innerHTML = txs.map((tx, i) => {
     const sign = tx.type === 'withdrawal' ? '−' : '+';
     const cls = tx.type === 'deposit' ? 'tx-deposit' : tx.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
-    return `<tr>
+    return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${dateFmt(tx.date)}</td>
       <td class="${cls}">${typeLabels[tx.type]}</td>
       <td style="text-align:right;" class="${cls}">${sign} ${eur(tx.amount)}</td>
