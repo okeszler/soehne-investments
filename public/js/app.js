@@ -3,6 +3,10 @@ const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day
 
 const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
 
+function cssVar(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+
 let currentData = null;
 let historyChart = null;
 let projectionChart = null;
@@ -120,6 +124,10 @@ function renderHistoryChart() {
   const labels = history.map(h => dateFmt(h.date));
   const values = history.map(h => h.balance);
 
+  const accent = cssVar('--brass-bright');
+  const muted = cssVar('--muted');
+  const grid = cssVar('--chart-grid');
+
   if (historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -127,8 +135,8 @@ function renderHistoryChart() {
       labels,
       datasets: [{
         data: values,
-        borderColor: '#90AFC5',
-        backgroundColor: 'rgba(144,175,197,0.12)',
+        borderColor: accent,
+        backgroundColor: accent + '1F',
         fill: true,
         tension: 0.25,
         pointRadius: 0,
@@ -139,8 +147,8 @@ function renderHistoryChart() {
       animation: chartAnimation,
       plugins: { legend: { display: false } },
       scales: {
-        x: { ticks: { color: '#90AFC5', maxTicksLimit: 6 }, grid: { display: false } },
-        y: { ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        x: { ticks: { color: muted, maxTicksLimit: 6 }, grid: { display: false } },
+        y: { ticks: { color: muted, callback: v => eur(v) }, grid: { color: grid } }
       }
     }
   });
@@ -154,6 +162,9 @@ function renderProjectionChart(years) {
   const capitalValues = points.map(p => p.capital);
   const interestValues = points.map(p => p.interest);
 
+  const muted = cssVar('--muted');
+  const grid = cssVar('--chart-grid');
+
   if (projectionChart) projectionChart.destroy();
   projectionChart = new Chart(ctx, {
     type: 'bar',
@@ -163,12 +174,12 @@ function renderProjectionChart(years) {
         {
           label: 'Kapital',
           data: capitalValues,
-          backgroundColor: '#336B87'
+          backgroundColor: cssVar('--stone')
         },
         {
           label: 'Zinsen',
           data: interestValues,
-          backgroundColor: '#90AFC5'
+          backgroundColor: cssVar('--mist')
         }
       ]
     },
@@ -177,12 +188,12 @@ function renderProjectionChart(years) {
       plugins: {
         legend: {
           display: true,
-          labels: { color: '#90AFC5', boxWidth: 12, font: { size: 11 } }
+          labels: { color: muted, boxWidth: 12, font: { size: 11 } }
         }
       },
       scales: {
-        x: { stacked: true, ticks: { color: '#90AFC5' }, grid: { display: false } },
-        y: { stacked: true, ticks: { color: '#90AFC5', callback: v => eur(v) }, grid: { color: 'rgba(255,255,255,0.06)' } }
+        x: { stacked: true, ticks: { color: muted }, grid: { display: false } },
+        y: { stacked: true, ticks: { color: muted, callback: v => eur(v) }, grid: { color: grid } }
       }
     }
   });
@@ -248,6 +259,17 @@ document.getElementById('pin-change-form').addEventListener('submit', async (e) 
     document.getElementById('pin-change-form').reset();
   } else {
     msgEl.textContent = data.error || 'PIN konnte nicht geändert werden.';
+  }
+});
+
+document.addEventListener('themechange', () => {
+  if (!currentData) return;
+  try {
+    renderHistoryChart();
+    const activeTab = document.querySelector('.horizon-tab.active');
+    renderProjectionChart(activeTab ? activeTab.dataset.years : '5');
+  } catch (err) {
+    console.error('Diagramme konnten nach Theme-Wechsel nicht neu geladen werden:', err);
   }
 });
 

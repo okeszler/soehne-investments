@@ -10,10 +10,17 @@
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/style.css">
+<script>
+(function() {
+  var saved = localStorage.getItem('theme');
+  if (saved) document.documentElement.dataset.theme = saved;
+})();
+</script>
 </head>
 <body>
 
 <div id="login-screen" class="login-screen">
+  <button class="theme-toggle" id="theme-toggle-login" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
   <div class="login-card">
     <div class="login-eyebrow">Verwaltung</div>
     <h1 class="login-title">Admin-Zugang</h1>
@@ -31,7 +38,10 @@
       <div class="greeting">Verwaltung</div>
       <div class="subtitle">Buchungen erfassen</div>
     </div>
-    <button class="logout-link" id="logout-btn">Abmelden</button>
+    <div class="header-actions">
+      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
+      <button class="logout-link" id="logout-btn">Abmelden</button>
+    </div>
   </div>
 
   <div class="son-picker" id="son-picker"></div>
@@ -88,6 +98,7 @@
   </div>
 </div>
 
+<script src="/js/theme.js"></script>
 <script src="/js/admin.js"></script>
 </body>
 </html>
