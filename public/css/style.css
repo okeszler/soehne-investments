@@ -49,25 +49,6 @@
   --chart-grid: rgba(42,49,50,0.08);
 }
 
-@media (prefers-color-scheme: light) {
-  :root:not([data-theme="dark"]) {
-    --bg: #F1F5F7;
-    --text: #2A3132;
-    --muted: #5C7480;
-    --paper: #FFFFFF;
-    --brass-bright: #336B87;
-    --accent-text: #FFFFFF;
-    --section-bg: rgba(42,49,50,0.035);
-    --section-border: rgba(42,49,50,0.09);
-    --divider: rgba(42,49,50,0.12);
-    --input-bg: rgba(42,49,50,0.03);
-    --input-border: rgba(42,49,50,0.18);
-    --border-1: rgba(42,49,50,0.18);
-    --border-2: rgba(42,49,50,0.4);
-    --chart-grid: rgba(42,49,50,0.08);
-  }
-}
-
 * { box-sizing: border-box; }
 
 @keyframes fadeSlideUp {

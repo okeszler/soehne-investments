@@ -5,15 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Verwaltung — Söhne-Kapital</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#2A3132">
+<meta name="theme-color" content="#F1F5F7">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 <link rel="stylesheet" href="/css/style.css">
 <script>
 (function() {
-  var saved = localStorage.getItem('theme');
-  if (saved) document.documentElement.dataset.theme = saved;
+  document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
 })();
 </script>
 </head>

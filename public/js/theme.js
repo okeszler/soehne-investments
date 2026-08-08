@@ -1,7 +1,5 @@
 function getEffectiveTheme() {
-  const saved = localStorage.getItem('theme');
-  if (saved) return saved;
-  return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+  return localStorage.getItem('theme') || 'light';
 }
 
 function updateThemeToggleIcons() {
