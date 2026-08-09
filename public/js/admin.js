@@ -5,6 +5,9 @@ const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 
 let sons = [];
 let activeSonId = null;
 let recurring = [];
+let products = [];
+
+const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich' };
 
 async function checkSession() {
   const res = await fetch('/api/admin/sons');
@@ -15,6 +18,7 @@ async function checkSession() {
     document.getElementById('admin-dashboard').style.display = 'block';
     renderSonPicker();
     if (sons.length) selectSon(sons[0].id);
+    await loadProducts();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
   }
@@ -192,6 +196,57 @@ document.getElementById('rate-form').addEventListener('submit', async (e) => {
     body: JSON.stringify({ sonId: activeSonId, annualRate })
   });
   await refreshSonBalance();
+});
+
+async function loadProducts() {
+  const res = await fetch('/api/admin/products');
+  const data = await res.json();
+  products = data.products || [];
+  renderProducts();
+}
+
+function renderProducts() {
+  const body = document.getElementById('product-body');
+  const empty = document.getElementById('product-empty');
+
+  if (!products.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = products.map(p => `<tr style="${p.active ? '' : 'opacity:0.5;'}">
+      <td>${p.name}</td>
+      <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
+      <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
+      <td>${frequencyLabels[p.interest_frequency]}</td>
+      <td><button class="tx-delete" data-id="${p.id}">Löschen</button></td>
+    </tr>`).join('');
+
+  body.querySelectorAll('.tx-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await fetch(`/api/admin/products?id=${btn.dataset.id}`, { method: 'DELETE' });
+      await loadProducts();
+    });
+  });
+}
+
+document.getElementById('product-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const body = {
+    name: document.getElementById('product-name').value,
+    lockDays: parseInt(document.getElementById('product-lock-days').value, 10),
+    apy: parseFloat(document.getElementById('product-apy').value) / 100,
+    interestFrequency: document.getElementById('product-frequency').value
+  };
+  await fetch('/api/admin/products', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  document.getElementById('product-form').reset();
+  await loadProducts();
 });
 
 checkSession();

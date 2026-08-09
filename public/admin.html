@@ -95,6 +95,26 @@
     </table>
     <div class="empty-note" id="tx-empty" style="display:none;">Noch keine Buchungen für diesen Sohn.</div>
   </div>
+
+  <div class="section">
+    <div class="section-title">Anlageprodukte (global)</div>
+    <form class="admin-form" id="product-form">
+      <input type="text" id="product-name" class="full" placeholder="Name, z.B. P2P-Kredite" required>
+      <input type="number" id="product-lock-days" step="1" min="0" placeholder="Bindung in Tagen (0 = flexibel)" required>
+      <input type="number" id="product-apy" step="0.01" min="0" placeholder="APY in % (z.B. 6)" required>
+      <select id="product-frequency" required>
+        <option value="monthly">Zinszubuchung monatlich</option>
+        <option value="quarterly">Zinszubuchung vierteljährlich</option>
+        <option value="yearly">Zinszubuchung jährlich</option>
+      </select>
+      <button type="submit" class="admin-submit">Produkt anlegen</button>
+    </form>
+    <table class="ledger-table" id="product-table">
+      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th><th></th></tr></thead>
+      <tbody id="product-body"></tbody>
+    </table>
+    <div class="empty-note" id="product-empty" style="display:none;">Noch keine Anlageprodukte angelegt.</div>
+  </div>
 </div>
 
 <script src="/js/theme.js"></script>
