@@ -19,6 +19,8 @@ async function checkSession() {
     renderSonPicker();
     if (sons.length) selectSon(sons[0].id);
     await loadProducts();
+    populateMessageRecipients();
+    await loadMessages();
   } else {
     document.getElementById('login-screen').style.display = 'flex';
   }
@@ -320,6 +322,59 @@ document.getElementById('investment-form').addEventListener('submit', async (e) 
   } else {
     messageEl.textContent = data.error || 'Investition konnte nicht angelegt werden.';
   }
+});
+
+function populateMessageRecipients() {
+  const select = document.getElementById('message-recipient');
+  select.innerHTML = '<option value="">Alle Söhne</option>' +
+    sons.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+async function loadMessages() {
+  const res = await fetch('/api/admin/messages');
+  const data = await res.json();
+  renderMessages(data.messages || []);
+}
+
+function renderMessages(messages) {
+  const body = document.getElementById('message-body-list');
+  const empty = document.getElementById('message-empty');
+
+  if (!messages.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = messages.map(m => `<tr>
+      <td>${m.son_name || 'Alle'}</td>
+      <td>${m.body}</td>
+      <td><button class="tx-delete" data-id="${m.id}">Löschen</button></td>
+    </tr>`).join('');
+
+  body.querySelectorAll('.tx-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      await fetch(`/api/admin/messages?id=${btn.dataset.id}`, { method: 'DELETE' });
+      await loadMessages();
+    });
+  });
+}
+
+document.getElementById('message-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const recipient = document.getElementById('message-recipient').value;
+  const body = {
+    sonId: recipient ? parseInt(recipient, 10) : null,
+    body: document.getElementById('message-body').value
+  };
+  await fetch('/api/admin/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  document.getElementById('message-form').reset();
+  await loadMessages();
 });
 
 checkSession();

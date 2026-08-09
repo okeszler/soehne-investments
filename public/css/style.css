@@ -262,6 +262,37 @@ input, select {
   right: 20px;
 }
 
+/* ---------- Nachrichten-Banner ---------- */
+
+.message-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--section-bg);
+  border: 1px solid var(--rust);
+  border-left-width: 3px;
+  border-radius: 4px;
+  padding: 14px 16px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.message-banner-body {
+  flex: 1;
+}
+
+.message-banner-dismiss {
+  background: transparent;
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.message-banner-dismiss:hover { color: var(--text); }
+
 /* ---------- Stamp / balance card ---------- */
 
 .stamp-card {

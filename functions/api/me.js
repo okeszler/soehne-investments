@@ -31,6 +31,13 @@ export async function onRequestGet({ request, env }) {
     (activeInvestments || []).reduce((sum, inv) => sum + (inv.balance * inv.apy / 365), 0)
   ) * 100) / 100;
 
+  const { results: messages } = await env.DB.prepare(
+    `SELECT id, body, created_at FROM messages
+     WHERE (son_id = ? OR son_id IS NULL)
+       AND id NOT IN (SELECT message_id FROM message_dismissals WHERE son_id = ?)
+     ORDER BY created_at DESC`
+  ).bind(son.id, son.id).all();
+
   const { results: recurring } = await env.DB.prepare(
     'SELECT type, amount FROM recurring_bookings WHERE son_id = ?'
   ).bind(son.id).all();
@@ -55,6 +62,7 @@ export async function onRequestGet({ request, env }) {
     history,
     transactions: txs,
     projections,
+    messages: (messages || []).map(m => ({ id: m.id, body: m.body, createdAt: m.created_at })),
     investments: (activeInvestments || []).map(inv => ({
       id: inv.id,
       productName: inv.product_name,

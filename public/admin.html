@@ -46,6 +46,22 @@
   <div class="son-picker" id="son-picker"></div>
 
   <div class="section">
+    <div class="section-title">Nachricht an Söhne</div>
+    <form class="admin-form" id="message-form">
+      <select id="message-recipient" required>
+        <option value="">Alle Söhne</option>
+      </select>
+      <textarea id="message-body" class="full" rows="3" placeholder="Nachricht (wird als Banner im Dashboard angezeigt)" required></textarea>
+      <button type="submit" class="admin-submit">Nachricht senden</button>
+    </form>
+    <table class="ledger-table" id="message-table">
+      <thead><tr><th>An</th><th>Nachricht</th><th></th></tr></thead>
+      <tbody id="message-body-list"></tbody>
+    </table>
+    <div class="empty-note" id="message-empty" style="display:none;">Noch keine Nachrichten gesendet.</div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Neue FLEX-Buchung</div>
     <form class="admin-form" id="tx-form">
       <input type="date" id="tx-date" required>

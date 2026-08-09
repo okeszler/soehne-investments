@@ -102,6 +102,7 @@ function showDashboard() {
     el.style.setProperty('--fade-i', i);
   });
 
+  renderMessages();
   renderInvestments();
   renderLedger();
 
@@ -243,6 +244,28 @@ function renderLedger() {
       <td style="text-align:right;" class="${cls}">${sign} ${eur(tx.amount)}</td>
     </tr>`;
   }).join('');
+}
+
+function renderMessages() {
+  const container = document.getElementById('message-banners');
+  const messages = currentData.messages || [];
+
+  container.innerHTML = messages.map(m => `<div class="message-banner" data-id="${m.id}">
+      <div class="message-banner-body">${m.body}</div>
+      <button class="message-banner-dismiss" data-id="${m.id}" type="button" aria-label="Nachricht schließen">×</button>
+    </div>`).join('');
+
+  container.querySelectorAll('.message-banner-dismiss').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.dataset.id;
+      await fetch('/api/dismiss-message', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messageId: id })
+      });
+      container.querySelector(`.message-banner[data-id="${id}"]`).remove();
+    });
+  });
 }
 
 function renderInvestments() {
