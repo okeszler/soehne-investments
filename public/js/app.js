@@ -84,12 +84,16 @@ function showDashboard() {
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
   animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
-  document.getElementById('rate-display').textContent = `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}%`;
+  const hasInvestments = (currentData.investments || []).length > 0;
+  document.getElementById('rate-display').textContent = hasInvestments
+    ? '(alle Anlagen)'
+    : `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}%`;
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
   });
 
+  renderInvestments();
   renderLedger();
 
   try {
@@ -230,6 +234,38 @@ function renderLedger() {
       <td style="text-align:right;" class="${cls}">${sign} ${eur(tx.amount)}</td>
     </tr>`;
   }).join('');
+}
+
+function renderInvestments() {
+  const section = document.getElementById('investments-section');
+  const investments = currentData.investments || [];
+
+  if (!investments.length) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  const body = document.getElementById('investment-body');
+  body.innerHTML = investments.map((inv, i) => {
+    const infoBtn = inv.description ? `<button class="info-btn" data-desc="inv-${i}" type="button" title="Info">ⓘ</button>` : '';
+    const descRow = inv.description
+      ? `<tr id="desc-inv-${i}" style="display:none;"><td colspan="4"><div class="product-description">${inv.description}</div></td></tr>`
+      : '';
+    return `<tr>
+      <td>${inv.productName}${infoBtn}</td>
+      <td>${eur(inv.principal)}</td>
+      <td>${eur(inv.balance)}</td>
+      <td>${dateFmt(inv.maturityDate)}</td>
+    </tr>${descRow}`;
+  }).join('');
+
+  body.querySelectorAll('.info-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = document.getElementById(`desc-${btn.dataset.desc}`);
+      row.style.display = row.style.display === 'none' ? '' : 'none';
+    });
+  });
 }
 
 document.getElementById('pin-change-form').addEventListener('submit', async (e) => {

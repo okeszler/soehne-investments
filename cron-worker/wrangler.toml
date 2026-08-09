@@ -5,8 +5,9 @@ compatibility_date = "2026-07-01"
 # Zinsgutschrift: läuft täglich um 23:00 UTC an den möglichen Monatsletzten (28.-31.).
 # Der Handler prüft selbst, ob der Folgetag der 1. ist (= heute ist der echte Monatsletzte).
 # Automatische Buchungen (z.B. Taschengeld): läuft am 1. jeden Monats um 06:00 UTC.
+# Investitionen (Zinsperioden + Fälligkeit): läuft täglich um 22:00 UTC.
 [triggers]
-crons = ["0 23 28-31 * *", "0 6 1 * *"]
+crons = ["0 23 28-31 * *", "0 6 1 * *", "0 22 * * *"]
 
 [[d1_databases]]
 binding = "DB"

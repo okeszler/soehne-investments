@@ -67,8 +67,10 @@ async function selectSon(id) {
   const son = sons.find(s => s.id === id);
   document.getElementById('rate-input').value = (son.annual_rate * 100).toFixed(2);
   document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
+  document.getElementById('investment-message').textContent = '';
   await loadTransactions();
   await loadRecurring();
+  await loadInvestments();
 }
 
 async function loadRecurring() {
@@ -212,24 +214,43 @@ function renderProducts() {
   if (!products.length) {
     body.innerHTML = '';
     empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
+  } else {
+    empty.style.display = 'none';
 
-  body.innerHTML = products.map(p => `<tr style="${p.active ? '' : 'opacity:0.5;'}">
-      <td>${p.name}</td>
-      <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
-      <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
-      <td>${frequencyLabels[p.interest_frequency]}</td>
-      <td><button class="tx-delete" data-id="${p.id}">Löschen</button></td>
-    </tr>`).join('');
+    body.innerHTML = products.map(p => {
+      const infoBtn = p.description ? `<button class="info-btn" data-desc="${p.id}" type="button" title="Info">ⓘ</button>` : '';
+      const descRow = p.description
+        ? `<tr id="desc-${p.id}" style="display:none;"><td colspan="5"><div class="product-description">${p.description}</div></td></tr>`
+        : '';
+      return `<tr style="${p.active ? '' : 'opacity:0.5;'}">
+        <td>${p.name}${infoBtn}</td>
+        <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
+        <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
+        <td>${frequencyLabels[p.interest_frequency]}</td>
+        <td><button class="tx-delete" data-id="${p.id}">Löschen</button></td>
+      </tr>${descRow}`;
+    }).join('');
 
-  body.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await fetch(`/api/admin/products?id=${btn.dataset.id}`, { method: 'DELETE' });
-      await loadProducts();
+    body.querySelectorAll('.tx-delete').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        await fetch(`/api/admin/products?id=${btn.dataset.id}`, { method: 'DELETE' });
+        await loadProducts();
+      });
     });
-  });
+
+    body.querySelectorAll('.info-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const row = document.getElementById(`desc-${btn.dataset.desc}`);
+        row.style.display = row.style.display === 'none' ? '' : 'none';
+      });
+    });
+  }
+
+  const select = document.getElementById('investment-product');
+  const activeProducts = products.filter(p => p.active);
+  select.innerHTML = activeProducts.length
+    ? activeProducts.map(p => `<option value="${p.id}">${p.name} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('')
+    : '<option value="">Kein Produkt verfügbar</option>';
 }
 
 document.getElementById('product-form').addEventListener('submit', async (e) => {
@@ -238,7 +259,8 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
     name: document.getElementById('product-name').value,
     lockDays: parseInt(document.getElementById('product-lock-days').value, 10),
     apy: parseFloat(document.getElementById('product-apy').value) / 100,
-    interestFrequency: document.getElementById('product-frequency').value
+    interestFrequency: document.getElementById('product-frequency').value,
+    description: document.getElementById('product-description').value
   };
   await fetch('/api/admin/products', {
     method: 'POST',
@@ -247,6 +269,57 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
   });
   document.getElementById('product-form').reset();
   await loadProducts();
+});
+
+async function loadInvestments() {
+  const res = await fetch(`/api/admin/investments?sonId=${activeSonId}`);
+  const data = await res.json();
+  renderInvestments(data.investments || []);
+}
+
+function renderInvestments(investments) {
+  const body = document.getElementById('investment-body');
+  const empty = document.getElementById('investment-empty');
+
+  if (!investments.length) {
+    body.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  body.innerHTML = investments.map(inv => `<tr style="${inv.status === 'paid_out' ? 'opacity:0.5;' : ''}">
+      <td>${inv.product_name}</td>
+      <td>${eur(inv.principal)}</td>
+      <td>${eur(inv.balance)}</td>
+      <td>${dateFmt(inv.maturity_date)}</td>
+      <td>${inv.status === 'active' ? 'aktiv' : 'ausgezahlt'}</td>
+    </tr>`).join('');
+}
+
+document.getElementById('investment-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const messageEl = document.getElementById('investment-message');
+  messageEl.textContent = '';
+  const body = {
+    sonId: activeSonId,
+    productId: parseInt(document.getElementById('investment-product').value, 10),
+    amount: parseFloat(document.getElementById('investment-amount').value)
+  };
+  const res = await fetch('/api/admin/investments', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById('investment-amount').value = '';
+    await loadInvestments();
+    await loadTransactions();
+    await refreshSonBalance();
+  } else {
+    messageEl.textContent = data.error || 'Investition konnte nicht angelegt werden.';
+  }
 });
 
 checkSession();

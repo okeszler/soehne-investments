@@ -12,8 +12,24 @@ export async function onRequestGet({ request, env }) {
     'SELECT date, type, amount, note FROM transactions WHERE son_id = ? ORDER BY date ASC, id ASC'
   ).bind(son.id).all();
 
-  const { balance, history } = computeBalanceHistory(txs || []);
-  const dailyInterest = Math.round((balance * son.annual_rate / 365) * 100) / 100;
+  const { balance: cashBalance, history } = computeBalanceHistory(txs || []);
+
+  const { results: activeInvestments } = await env.DB.prepare(
+    `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date,
+            p.name as product_name, p.apy, p.lock_days, p.interest_frequency, p.description
+     FROM investments i JOIN products p ON p.id = i.product_id
+     WHERE i.son_id = ? AND i.status = 'active' ORDER BY i.maturity_date ASC`
+  ).bind(son.id).all();
+
+  const investmentsTotal = Math.round(
+    (activeInvestments || []).reduce((sum, inv) => sum + inv.balance, 0) * 100
+  ) / 100;
+  const balance = Math.round((cashBalance + investmentsTotal) * 100) / 100;
+
+  const dailyInterest = Math.round((
+    (cashBalance * son.annual_rate / 365) +
+    (activeInvestments || []).reduce((sum, inv) => sum + (inv.balance * inv.apy / 365), 0)
+  ) * 100) / 100;
 
   const { results: recurring } = await env.DB.prepare(
     'SELECT type, amount FROM recurring_bookings WHERE son_id = ?'
@@ -23,20 +39,33 @@ export async function onRequestGet({ request, env }) {
   ) / 100;
 
   const projections = {
-    '1': projectCompoundGrowth(balance, son.annual_rate, 1, monthlyContribution),
-    '5': projectCompoundGrowth(balance, son.annual_rate, 5, monthlyContribution),
-    '10': projectCompoundGrowth(balance, son.annual_rate, 10, monthlyContribution),
-    '20': projectCompoundGrowth(balance, son.annual_rate, 20, monthlyContribution)
+    '1': projectCompoundGrowth(cashBalance, son.annual_rate, 1, monthlyContribution),
+    '5': projectCompoundGrowth(cashBalance, son.annual_rate, 5, monthlyContribution),
+    '10': projectCompoundGrowth(cashBalance, son.annual_rate, 10, monthlyContribution),
+    '20': projectCompoundGrowth(cashBalance, son.annual_rate, 20, monthlyContribution)
   };
 
   return json({
     name: son.name,
     annualRate: son.annual_rate,
     balance,
+    cashBalance,
     dailyInterest,
     monthlyContribution,
     history,
     transactions: txs,
-    projections
+    projections,
+    investments: (activeInvestments || []).map(inv => ({
+      id: inv.id,
+      productName: inv.product_name,
+      description: inv.description,
+      apy: inv.apy,
+      lockDays: inv.lock_days,
+      interestFrequency: inv.interest_frequency,
+      principal: inv.principal,
+      balance: inv.balance,
+      startDate: inv.start_date,
+      maturityDate: inv.maturity_date
+    }))
   });
 }

@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
   const { results } = await env.DB.prepare(
-    'SELECT id, name, lock_days, apy, interest_frequency, active FROM products ORDER BY id ASC'
+    'SELECT id, name, lock_days, apy, interest_frequency, description, active FROM products ORDER BY id ASC'
   ).all();
 
   return json({ products: results || [] });
@@ -15,7 +15,7 @@ export async function onRequestPost({ request, env }) {
   const session = await requireAdminSession(request, env);
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
-  const { name, lockDays, apy, interestFrequency } = await request.json();
+  const { name, lockDays, apy, interestFrequency, description } = await request.json();
   if (!name || typeof name !== 'string' || !name.trim()) {
     return json({ error: 'Name erforderlich' }, { status: 400 });
   }
@@ -30,8 +30,8 @@ export async function onRequestPost({ request, env }) {
   }
 
   await env.DB.prepare(
-    'INSERT INTO products (name, lock_days, apy, interest_frequency) VALUES (?, ?, ?, ?)'
-  ).bind(name.trim(), lockDays, apy, interestFrequency).run();
+    'INSERT INTO products (name, lock_days, apy, interest_frequency, description) VALUES (?, ?, ?, ?, ?)'
+  ).bind(name.trim(), lockDays, apy, interestFrequency, (description || '').trim() || null).run();
 
   return json({ ok: true });
 }

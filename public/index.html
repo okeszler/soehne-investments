@@ -53,6 +53,14 @@
     <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span> · <span id="rate-display"></span> p.a.</div>
   </div>
 
+  <div class="section" id="investments-section" style="display:none;">
+    <div class="section-title">Investitionen</div>
+    <table class="ledger-table" id="investment-table">
+      <thead><tr><th>Produkt</th><th>Kapital</th><th>Aktueller Wert</th><th>Fällig am</th></tr></thead>
+      <tbody id="investment-body"></tbody>
+    </table>
+  </div>
+
   <div class="section">
     <div class="section-title">Verlauf</div>
     <canvas id="history-chart" height="90"></canvas>

@@ -472,7 +472,8 @@ canvas { max-width: 100%; }
 }
 
 .admin-form select,
-.admin-form input {
+.admin-form input,
+.admin-form textarea {
   font-family: var(--font-body);
   font-size: 13px;
   padding: 10px;
@@ -480,6 +481,7 @@ canvas { max-width: 100%; }
   border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text);
+  resize: vertical;
 }
 
 .admin-form .full { grid-column: 1 / -1; }
@@ -506,6 +508,33 @@ canvas { max-width: 100%; }
 }
 
 .tx-delete:hover { opacity: 1; }
+
+.info-btn {
+  background: transparent;
+  color: var(--brass);
+  font-family: var(--font-mono);
+  border: 1px solid var(--border-1);
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  font-size: 11px;
+  line-height: 1;
+  padding: 0;
+  margin-left: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: middle;
+}
+
+.info-btn:hover { border-color: var(--border-2); }
+
+.product-description {
+  font-size: 12px;
+  color: var(--muted);
+  line-height: 1.5;
+  padding: 10px 0 2px;
+}
 
 .son-picker {
   display: flex;

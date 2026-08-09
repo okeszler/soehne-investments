@@ -107,6 +107,7 @@
         <option value="quarterly">Zinszubuchung vierteljährlich</option>
         <option value="yearly">Zinszubuchung jährlich</option>
       </select>
+      <textarea id="product-description" class="full" rows="3" placeholder="Erklärungstext: was ist das Produkt, wie funktioniert es? (optional)"></textarea>
       <button type="submit" class="admin-submit">Produkt anlegen</button>
     </form>
     <table class="ledger-table" id="product-table">
@@ -114,6 +115,21 @@
       <tbody id="product-body"></tbody>
     </table>
     <div class="empty-note" id="product-empty" style="display:none;">Noch keine Anlageprodukte angelegt.</div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Neue Investition</div>
+    <form class="admin-form" id="investment-form">
+      <select id="investment-product" required></select>
+      <input type="number" id="investment-amount" step="0.01" min="0" placeholder="Betrag in €" required>
+      <button type="submit" class="admin-submit">Investition anlegen</button>
+    </form>
+    <div id="investment-message" class="pin-change-message"></div>
+    <table class="ledger-table" id="investment-table">
+      <thead><tr><th>Produkt</th><th>Kapital</th><th>Aktueller Wert</th><th>Fällig am</th><th>Status</th></tr></thead>
+      <tbody id="investment-body"></tbody>
+    </table>
+    <div class="empty-note" id="investment-empty" style="display:none;">Keine Investitionen für diesen Sohn.</div>
   </div>
 </div>
 
