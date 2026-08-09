@@ -85,9 +85,18 @@ function showDashboard() {
   animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   const hasInvestments = (currentData.investments || []).length > 0;
+  const flexRateText = `FLEX ${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
   document.getElementById('rate-display').textContent = hasInvestments
-    ? '(alle Anlagen)'
-    : `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}%`;
+    ? `${flexRateText} + Anlagen`
+    : flexRateText;
+
+  const flexLine = document.getElementById('flex-balance-line');
+  if (hasInvestments) {
+    flexLine.style.display = 'block';
+    flexLine.textContent = `davon FLEX: ${eur(currentData.cashBalance)}`;
+  } else {
+    flexLine.style.display = 'none';
+  }
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
@@ -202,9 +211,9 @@ function renderProjectionChart(years) {
     }
   });
 
-  const start = currentData.balance;
+  const start = currentData.cashBalance;
   const end = points[points.length - 1].value;
-  const rateText = `${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
+  const rateText = `FLEX-Zinssatz von ${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
   const contribution = currentData.monthlyContribution || 0;
   const contributionText = contribution > 0
     ? ` und deiner automatischen monatlichen Zahlung von ${eur(contribution)} (z.B. Taschengeld)`
@@ -212,7 +221,7 @@ function renderProjectionChart(years) {
       ? ` und deiner automatischen monatlichen Abbuchung von ${eur(Math.abs(contribution))}`
       : ' und ohne weitere Ein-/Auszahlungen';
   document.getElementById('projection-footnote').textContent =
-    `Fiktiv: bei ${rateText}${contributionText} würde aus ${eur(start)} in ${years} Jahr(en) rechnerisch ${eur(end)} werden.`;
+    `Fiktiv: bei ${rateText}${contributionText} würde dein FLEX-Guthaben von ${eur(start)} in ${years} Jahr(en) rechnerisch auf ${eur(end)} wachsen.`;
 }
 
 function renderLedger() {

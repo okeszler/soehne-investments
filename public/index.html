@@ -50,7 +50,8 @@
   <div class="stamp-card">
     <div class="stamp-eyebrow"><span>Kontostand</span><span id="stamp-date"></span></div>
     <div class="stamp-balance" id="balance-amount">€ 0,00</div>
-    <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span> · <span id="rate-display"></span> p.a.</div>
+    <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span> · <span id="rate-display"></span></div>
+    <div class="stamp-daily" id="flex-balance-line" style="display:none;"></div>
   </div>
 
   <div class="section" id="investments-section" style="display:none;">
@@ -67,7 +68,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Fiktive Hochrechnung (Zinseszins)</div>
+    <div class="section-title">FLEX-Hochrechnung (Zinseszins)</div>
     <div class="horizon-tabs" id="horizon-tabs">
       <button class="horizon-tab" data-years="1">1 Jahr</button>
       <button class="horizon-tab active" data-years="5">5 Jahre</button>
@@ -79,7 +80,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Bewegungen</div>
+    <div class="section-title">FLEX-Bewegungen</div>
     <table class="ledger-table" id="ledger-table">
       <thead>
         <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>

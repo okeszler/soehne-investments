@@ -36,7 +36,7 @@ export async function onRequestPost({ request, env }) {
   ).bind(sonId).all();
   const balance = (txs || []).reduce((sum, tx) => sum + (tx.type === 'withdrawal' ? -tx.amount : tx.amount), 0);
   if (amount > balance) {
-    return json({ error: `Nicht genug freies Kapital (verfügbar: ${balance.toFixed(2)} €)` }, { status: 400 });
+    return json({ error: `Nicht genug FLEX-Guthaben (verfügbar: ${balance.toFixed(2)} €)` }, { status: 400 });
   }
 
   const today = new Date().toISOString().slice(0, 10);

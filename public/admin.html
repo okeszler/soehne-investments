@@ -46,7 +46,7 @@
   <div class="son-picker" id="son-picker"></div>
 
   <div class="section">
-    <div class="section-title">Neue Buchung</div>
+    <div class="section-title">Neue FLEX-Buchung</div>
     <form class="admin-form" id="tx-form">
       <input type="date" id="tx-date" required>
       <select id="tx-type" required>
@@ -61,7 +61,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Jahreszins für Hochrechnung</div>
+    <div class="section-title">FLEX-Zinssatz (für Hochrechnung)</div>
     <form class="admin-form" id="rate-form">
       <input type="number" id="rate-input" step="0.01" min="0" max="100" placeholder="z.B. 3 für 3%">
       <button type="submit" class="admin-submit" style="grid-column:1/-1;">Zins speichern</button>
@@ -69,7 +69,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Automatische Buchung am 1. des Monats</div>
+    <div class="section-title">Automatische FLEX-Buchung am 1. des Monats</div>
     <form class="admin-form" id="recurring-form">
       <select id="recurring-type" required>
         <option value="deposit">Einzahlung</option>
@@ -88,7 +88,7 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Bisherige Buchungen</div>
+    <div class="section-title">Bisherige FLEX-Buchungen</div>
     <table class="ledger-table" id="tx-table">
       <thead><tr><th>Datum</th><th>Art</th><th>Betrag</th><th></th></tr></thead>
       <tbody id="tx-body"></tbody>
