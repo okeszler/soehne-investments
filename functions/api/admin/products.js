@@ -25,7 +25,7 @@ export async function onRequestPost({ request, env }) {
   if (typeof apy !== 'number' || apy < 0) {
     return json({ error: 'APY ungültig' }, { status: 400 });
   }
-  if (!['monthly', 'quarterly', 'yearly'].includes(interestFrequency)) {
+  if (!['monthly', 'quarterly', 'yearly', 'maturity'].includes(interestFrequency)) {
     return json({ error: 'Zinszubuchung ungültig' }, { status: 400 });
   }
 

@@ -12,7 +12,10 @@ export default {
   }
 };
 
-const PERIOD_DAYS = { monthly: 30, quarterly: 91, yearly: 365 };
+// "maturity" (endfällig) bekommt nie eine Zwischen-Gutschrift (periodDays = Infinity,
+// die Schleife unten macht dann immer "continue") — die gesamte Laufzeit-Verzinsung
+// wird erst im Fälligkeits-Zweig auf einmal mit dem Kapital ausgezahlt.
+const PERIOD_DAYS = { monthly: 30, quarterly: 91, yearly: 365, maturity: Infinity };
 
 // Läuft täglich: bucht periodische Zinsen je Produkt-Intervall auf die gesperrte
 // Investition, und überweist bei Ablauf der Bindungsfrist Kapital + Zinsen als eine

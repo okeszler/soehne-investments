@@ -7,7 +7,7 @@ let activeSonId = null;
 let recurring = [];
 let products = [];
 
-const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich' };
+const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich', maturity: 'endfällig' };
 
 async function checkSession() {
   const res = await fetch('/api/admin/sons');

@@ -1,5 +1,7 @@
 import { requireAdminSession, json } from '../../_shared.js';
 
+const MIN_INVESTMENT_AMOUNT = 100;
+
 export async function onRequestGet({ request, env }) {
   const session = await requireAdminSession(request, env);
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
@@ -25,6 +27,9 @@ export async function onRequestPost({ request, env }) {
   const { sonId, productId, amount } = await request.json();
   if (!sonId || !productId || !(amount > 0)) {
     return json({ error: 'Ungültige Eingabe' }, { status: 400 });
+  }
+  if (amount < MIN_INVESTMENT_AMOUNT) {
+    return json({ error: `Mindestbetrag für eine Investition sind ${MIN_INVESTMENT_AMOUNT} €` }, { status: 400 });
   }
 
   const product = await env.DB.prepare('SELECT id, lock_days, active FROM products WHERE id = ?')
