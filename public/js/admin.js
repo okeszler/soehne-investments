@@ -6,6 +6,7 @@ let sons = [];
 let activeSonId = null;
 let recurring = [];
 let products = [];
+let editingProductId = null;
 
 const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich', maturity: 'endfällig' };
 
@@ -229,6 +230,7 @@ function renderProducts() {
         <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
         <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
         <td>${frequencyLabels[p.interest_frequency]}</td>
+        <td><button class="info-btn product-edit" data-id="${p.id}" type="button" title="Bearbeiten">✎</button></td>
         <td><button class="tx-delete" data-id="${p.id}">Löschen</button></td>
       </tr>${descRow}`;
     }).join('');
@@ -236,8 +238,13 @@ function renderProducts() {
     body.querySelectorAll('.tx-delete').forEach(btn => {
       btn.addEventListener('click', async () => {
         await fetch(`/api/admin/products?id=${btn.dataset.id}`, { method: 'DELETE' });
+        if (editingProductId === Number(btn.dataset.id)) cancelProductEdit();
         await loadProducts();
       });
+    });
+
+    body.querySelectorAll('.product-edit').forEach(btn => {
+      btn.addEventListener('click', () => startProductEdit(Number(btn.dataset.id)));
     });
 
     body.querySelectorAll('.info-btn').forEach(btn => {
@@ -255,6 +262,29 @@ function renderProducts() {
     : '<option value="">Kein Produkt verfügbar</option>';
 }
 
+function startProductEdit(id) {
+  const p = products.find(pr => pr.id === id);
+  if (!p) return;
+  editingProductId = id;
+  document.getElementById('product-name').value = p.name;
+  document.getElementById('product-lock-days').value = p.lock_days;
+  document.getElementById('product-apy').value = (p.apy * 100).toFixed(2);
+  document.getElementById('product-frequency').value = p.interest_frequency;
+  document.getElementById('product-description').value = p.description || '';
+  document.getElementById('product-submit').textContent = 'Produkt speichern';
+  document.getElementById('product-cancel-edit').style.display = 'block';
+  document.getElementById('product-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function cancelProductEdit() {
+  editingProductId = null;
+  document.getElementById('product-form').reset();
+  document.getElementById('product-submit').textContent = 'Produkt anlegen';
+  document.getElementById('product-cancel-edit').style.display = 'none';
+}
+
+document.getElementById('product-cancel-edit').addEventListener('click', cancelProductEdit);
+
 document.getElementById('product-form').addEventListener('submit', async (e) => {
   e.preventDefault();
   const body = {
@@ -264,12 +294,20 @@ document.getElementById('product-form').addEventListener('submit', async (e) => 
     interestFrequency: document.getElementById('product-frequency').value,
     description: document.getElementById('product-description').value
   };
-  await fetch('/api/admin/products', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  document.getElementById('product-form').reset();
+  if (editingProductId) {
+    await fetch('/api/admin/products', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ...body, id: editingProductId })
+    });
+  } else {
+    await fetch('/api/admin/products', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body)
+    });
+  }
+  cancelProductEdit();
   await loadProducts();
 });
 

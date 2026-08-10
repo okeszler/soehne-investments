@@ -125,10 +125,11 @@
         <option value="maturity">Endfällig (bei Fälligkeit)</option>
       </select>
       <textarea id="product-description" class="full" rows="3" placeholder="Erklärungstext: was ist das Produkt, wie funktioniert es? (optional)"></textarea>
-      <button type="submit" class="admin-submit">Produkt anlegen</button>
+      <button type="submit" class="admin-submit" id="product-submit">Produkt anlegen</button>
+      <button type="button" class="tx-delete full" id="product-cancel-edit" style="display:none;">Bearbeiten abbrechen</button>
     </form>
     <table class="ledger-table" id="product-table">
-      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th><th colspan="2"></th></tr></thead>
       <tbody id="product-body"></tbody>
     </table>
     <div class="empty-note" id="product-empty" style="display:none;">Noch keine Anlageprodukte angelegt.</div>
