@@ -94,6 +94,49 @@ export function computeBalanceHistory(transactions) {
   return { balance: Math.round(running * 100) / 100, history };
 }
 
+export const MIN_INVESTMENT_AMOUNT = 100;
+
+// Legt eine Investition an: prüft Produkt + FLEX-Guthaben, bucht eine Auszahlung auf
+// das Cashflow-Konto und legt die gesperrte Investition an. Von Admin- und
+// Sohn-Endpunkt gemeinsam genutzt, damit beide exakt dieselben Regeln durchsetzen.
+export async function createInvestment(env, sonId, productId, amount) {
+  if (!sonId || !productId || !(amount > 0)) {
+    return { error: 'Ungültige Eingabe', status: 400 };
+  }
+  if (amount < MIN_INVESTMENT_AMOUNT) {
+    return { error: `Mindestbetrag für eine Investition sind ${MIN_INVESTMENT_AMOUNT} €`, status: 400 };
+  }
+
+  const product = await env.DB.prepare('SELECT id, name, lock_days, active FROM products WHERE id = ?')
+    .bind(productId).first();
+  if (!product || !product.active) return { error: 'Produkt nicht gefunden', status: 404 };
+
+  const { results: txs } = await env.DB.prepare(
+    'SELECT type, amount FROM transactions WHERE son_id = ?'
+  ).bind(sonId).all();
+  const balance = (txs || []).reduce((sum, tx) => sum + (tx.type === 'withdrawal' ? -tx.amount : tx.amount), 0);
+  if (amount > balance) {
+    return { error: `Nicht genug FLEX-Guthaben (verfügbar: ${balance.toFixed(2)} €)`, status: 400 };
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const maturity = new Date();
+  maturity.setUTCDate(maturity.getUTCDate() + product.lock_days);
+  const maturityDate = maturity.toISOString().slice(0, 10);
+
+  await env.DB.batch([
+    env.DB.prepare(
+      'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+    ).bind(sonId, today, 'withdrawal', amount, `Investition angelegt: ${product.name}`),
+    env.DB.prepare(
+      `INSERT INTO investments (son_id, product_id, principal, balance, start_date, maturity_date, last_credit_date)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
+    ).bind(sonId, productId, amount, amount, today, maturityDate, today)
+  ]);
+
+  return { ok: true };
+}
+
 // Schickt eine Push-Benachrichtigung an alle Geräte eines oder mehrerer Söhne.
 // sonIds: Array von Sohn-IDs, oder null für alle Söhne. Räumt abgelaufene Abos
 // (404/410 vom Push-Dienst) automatisch aus der DB auf.

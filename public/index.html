@@ -69,6 +69,20 @@
     </table>
   </div>
 
+  <div class="section" id="products-section" style="display:none;">
+    <div class="section-title">Neues Produkt starten</div>
+    <table class="ledger-table" id="available-product-table">
+      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th></tr></thead>
+      <tbody id="available-product-body"></tbody>
+    </table>
+    <form class="admin-form" id="invest-form" style="margin-top:16px;">
+      <select id="invest-product" required></select>
+      <input type="number" id="invest-amount" step="0.01" min="100" placeholder="Betrag in € (mind. 100)" required>
+      <button type="submit" class="admin-submit">Investieren</button>
+    </form>
+    <div id="invest-message" class="pin-change-message"></div>
+  </div>
+
   <div class="section">
     <div class="section-title">Verlauf</div>
     <canvas id="history-chart" height="90"></canvas>

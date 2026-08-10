@@ -172,6 +172,7 @@ function showDashboard() {
 
   renderMessages();
   renderInvestments();
+  loadAvailableProducts();
   renderLedger();
   setupPush().catch(err => console.error('Push-Setup fehlgeschlagen:', err));
 
@@ -368,6 +369,76 @@ function renderInvestments() {
     });
   });
 }
+
+const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich', maturity: 'endfällig' };
+
+async function loadAvailableProducts() {
+  const res = await fetch('/api/products');
+  const data = await res.json();
+  renderAvailableProducts(data.products || []);
+}
+
+function renderAvailableProducts(products) {
+  const section = document.getElementById('products-section');
+  if (!products.length) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  const body = document.getElementById('available-product-body');
+  body.innerHTML = products.map(p => {
+    const infoBtn = p.description ? `<button class="info-btn" data-desc="prod-${p.id}" type="button" title="Info">ⓘ</button>` : '';
+    const descRow = p.description
+      ? `<tr id="desc-prod-${p.id}" style="display:none;"><td colspan="4"><div class="product-description">${p.description}</div></td></tr>`
+      : '';
+    return `<tr>
+      <td>${p.name}${infoBtn}</td>
+      <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
+      <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
+      <td>${frequencyLabels[p.interest_frequency]}</td>
+    </tr>${descRow}`;
+  }).join('');
+
+  body.querySelectorAll('.info-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = document.getElementById(`desc-${btn.dataset.desc}`);
+      row.style.display = row.style.display === 'none' ? '' : 'none';
+    });
+  });
+
+  const select = document.getElementById('invest-product');
+  select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('');
+}
+
+document.getElementById('invest-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msgEl = document.getElementById('invest-message');
+  msgEl.textContent = '';
+  msgEl.classList.remove('pin-change-success');
+
+  const body = {
+    productId: parseInt(document.getElementById('invest-product').value, 10),
+    amount: parseFloat(document.getElementById('invest-amount').value)
+  };
+  const res = await fetch('/api/invest', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById('invest-amount').value = '';
+    const meRes = await fetch('/api/me');
+    currentData = await meRes.json();
+    showDashboard();
+    const refreshedMsgEl = document.getElementById('invest-message');
+    refreshedMsgEl.textContent = 'Investition angelegt!';
+    refreshedMsgEl.classList.add('pin-change-success');
+  } else {
+    msgEl.textContent = data.error || 'Investition konnte nicht angelegt werden.';
+  }
+});
 
 document.getElementById('pin-change-form').addEventListener('submit', async (e) => {
   e.preventDefault();
