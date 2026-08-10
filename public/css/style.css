@@ -340,13 +340,16 @@ input, select {
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .stamp-balance {
-    background-image: linear-gradient(115deg, var(--ink) 30%, var(--mist) 45%, #fff 50%, var(--mist) 55%, var(--ink) 70%);
-    background-size: 250% 100%;
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    animation: shimmer 6s ease-in-out infinite;
+  .stamp-balance::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.75) 50%, transparent 60%);
+    mix-blend-mode: overlay;
+    transform: translateX(-130%);
+    animation: shimmer-sweep 6s ease-in-out infinite;
+    will-change: transform;
+    pointer-events: none;
   }
 
   .stamp-balance::after {
@@ -356,18 +359,28 @@ input, select {
     right: -24px;
     font-size: 0.35em;
     animation: twinkle 2.6s ease-in-out infinite;
+    will-change: transform, opacity;
   }
 }
 
-@keyframes shimmer {
-  0%, 20% { background-position: 220% 0; }
-  55%, 70% { background-position: 0% 0; }
-  100% { background-position: -220% 0; }
+@keyframes shimmer-sweep {
+  0%, 20% { transform: translateX(-130%); }
+  55%, 70% { transform: translateX(130%); }
+  100% { transform: translateX(130%); }
 }
 
 @keyframes twinkle {
   0%, 100% { opacity: 0.2; transform: scale(0.75) rotate(0deg); }
   50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
+}
+
+.stamp-tax-note {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink);
+  opacity: 0.65;
+  line-height: 1.5;
+  margin-bottom: 10px;
 }
 
 .stamp-daily {

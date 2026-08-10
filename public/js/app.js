@@ -1,4 +1,5 @@
-const eur = (n) => new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' }).format(n);
+const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
+const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
 const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
@@ -153,10 +154,6 @@ function showDashboard() {
   animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   const hasInvestments = (currentData.investments || []).length > 0;
-  const flexRateText = `FLEX ${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
-  document.getElementById('rate-display').textContent = hasInvestments
-    ? `${flexRateText} + Anlagen`
-    : flexRateText;
 
   const flexLine = document.getElementById('flex-balance-line');
   if (hasInvestments) {
