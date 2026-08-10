@@ -11,6 +11,74 @@ let currentData = null;
 let historyChart = null;
 let projectionChart = null;
 
+function urlBase64ToUint8Array(base64String) {
+  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+  const rawData = atob(base64);
+  return Uint8Array.from([...rawData].map(c => c.charCodeAt(0)));
+}
+
+function dismissPushBanner(kind) {
+  localStorage.setItem(kind === 'ios-hint' ? 'pushHintDismissed' : 'pushOfferDismissed', '1');
+  document.getElementById('push-banner').style.display = 'none';
+}
+
+document.getElementById('push-banner-dismiss').addEventListener('click', () => {
+  dismissPushBanner(document.getElementById('push-banner').dataset.kind);
+});
+
+async function setupPush() {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+
+  const banner = document.getElementById('push-banner');
+  const text = document.getElementById('push-banner-text');
+  const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+
+  const registration = await navigator.serviceWorker.register('/sw.js');
+
+  if (isIOS && !isStandalone) {
+    if (localStorage.getItem('pushHintDismissed')) return;
+    banner.dataset.kind = 'ios-hint';
+    banner.style.display = 'flex';
+    text.textContent = 'Füge diese Seite über „Teilen“ → „Zum Home-Bildschirm“ hinzu, um Benachrichtigungen zu erhalten.';
+    return;
+  }
+
+  if (Notification.permission === 'denied') return;
+  const existing = await registration.pushManager.getSubscription();
+  if (existing) return;
+  if (localStorage.getItem('pushOfferDismissed')) return;
+
+  banner.dataset.kind = 'offer';
+  banner.style.display = 'flex';
+  text.innerHTML = '';
+  const btn = document.createElement('button');
+  btn.className = 'admin-submit';
+  btn.style.padding = '6px 14px';
+  btn.style.fontSize = '12px';
+  btn.textContent = '🔔 Benachrichtigungen aktivieren';
+  btn.addEventListener('click', async () => {
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') {
+      banner.style.display = 'none';
+      return;
+    }
+    const { publicKey } = await (await fetch('/api/vapid-public-key')).json();
+    const sub = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToUint8Array(publicKey)
+    });
+    await fetch('/api/push-subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscription: sub.toJSON() })
+    });
+    banner.style.display = 'none';
+  });
+  text.appendChild(btn);
+}
+
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const chartAnimation = prefersReducedMotion ? false : { duration: 700, easing: 'easeOutQuart' };
 
@@ -105,6 +173,7 @@ function showDashboard() {
   renderMessages();
   renderInvestments();
   renderLedger();
+  setupPush().catch(err => console.error('Push-Setup fehlgeschlagen:', err));
 
   try {
     renderHistoryChart();

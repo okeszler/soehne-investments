@@ -1,4 +1,5 @@
 // Gemeinsame Hilfsfunktionen für alle Pages Functions
+import { buildPushPayload } from '@block65/webcrypto-web-push';
 
 export async function sha256Hex(text) {
   const data = new TextEncoder().encode(text);
@@ -91,6 +92,40 @@ export function computeBalanceHistory(transactions) {
     history.push({ date: tx.date, balance: Math.round(running * 100) / 100, type: tx.type, amount: tx.amount, note: tx.note });
   }
   return { balance: Math.round(running * 100) / 100, history };
+}
+
+// Schickt eine Push-Benachrichtigung an alle Geräte eines oder mehrerer Söhne.
+// sonIds: Array von Sohn-IDs, oder null für alle Söhne. Räumt abgelaufene Abos
+// (404/410 vom Push-Dienst) automatisch aus der DB auf.
+export async function sendPushToSons(env, sonIds, payload) {
+  const vapid = {
+    subject: env.VAPID_SUBJECT,
+    publicKey: env.VAPID_PUBLIC_KEY,
+    privateKey: env.VAPID_PRIVATE_KEY
+  };
+
+  const { results: subs } = sonIds
+    ? await env.DB.prepare(
+        `SELECT id, son_id, endpoint, p256dh, auth FROM push_subscriptions WHERE son_id IN (${sonIds.map(() => '?').join(',')})`
+      ).bind(...sonIds).all()
+    : await env.DB.prepare('SELECT id, son_id, endpoint, p256dh, auth FROM push_subscriptions').all();
+
+  for (const sub of subs || []) {
+    const subscription = {
+      endpoint: sub.endpoint,
+      expirationTime: null,
+      keys: { p256dh: sub.p256dh, auth: sub.auth }
+    };
+    try {
+      const pushPayload = await buildPushPayload({ data: JSON.stringify(payload) }, subscription, vapid);
+      const res = await fetch(subscription.endpoint, pushPayload);
+      if (res.status === 404 || res.status === 410) {
+        await env.DB.prepare('DELETE FROM push_subscriptions WHERE id = ?').bind(sub.id).run();
+      }
+    } catch {
+      // einzelnes fehlgeschlagenes Abo soll die anderen nicht blockieren
+    }
+  }
 }
 
 // Zinseszins-Hochrechnung: Startkapital, Jahreszins, Anzahl Jahre, monatliche Sparrate (optional, hier 0)

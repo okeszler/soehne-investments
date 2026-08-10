@@ -1,4 +1,4 @@
-import { requireAdminSession, json } from '../../_shared.js';
+import { requireAdminSession, sendPushToSons, json } from '../../_shared.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await requireAdminSession(request, env);
@@ -25,6 +25,11 @@ export async function onRequestPost({ request, env }) {
   await env.DB.prepare(
     'INSERT INTO messages (son_id, body) VALUES (?, ?)'
   ).bind(sonId || null, body.trim()).run();
+
+  await sendPushToSons(env, sonId ? [sonId] : null, {
+    title: 'Dein Kapital',
+    body: body.trim()
+  });
 
   return json({ ok: true });
 }
