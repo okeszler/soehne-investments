@@ -22,6 +22,14 @@ export async function onRequestPost({ request, env }) {
   }
 
   const newHash = await sha256Hex(newPin);
+  // Zwei Söhne mit identischem PIN-Hash würden den Login mehrdeutig machen
+  // (SELECT ... WHERE pin_hash = ? könnte mehrere Treffer liefern).
+  const collision = await env.DB.prepare('SELECT id FROM sons WHERE pin_hash = ? AND id != ?')
+    .bind(newHash, session.sonId).first();
+  if (collision) {
+    return json({ error: 'Diese PIN ist schon vergeben, bitte eine andere wählen' }, { status: 409 });
+  }
+
   await env.DB.prepare('UPDATE sons SET pin_hash = ? WHERE id = ?')
     .bind(newHash, session.sonId).run();
 

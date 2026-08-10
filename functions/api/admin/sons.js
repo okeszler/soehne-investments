@@ -1,4 +1,4 @@
-import { requireAdminSession, computeBalanceHistory, json } from '../../_shared.js';
+import { requireAdminSession, computeBalanceHistory, investmentSnapshot, json } from '../../_shared.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await requireAdminSession(request, env);
@@ -13,8 +13,19 @@ export async function onRequestGet({ request, env }) {
     const { results: txs } = await env.DB.prepare(
       'SELECT date, type, amount, note FROM transactions WHERE son_id = ? ORDER BY date ASC, id ASC'
     ).bind(son.id).all();
-    const { balance } = computeBalanceHistory(txs || []);
-    withBalances.push({ ...son, balance });
+    const { balance: cashBalance } = computeBalanceHistory(txs || []);
+
+    const { results: activeInvestments } = await env.DB.prepare(
+      `SELECT i.balance, i.last_credit_date, i.maturity_date, p.apy, p.interest_frequency
+       FROM investments i JOIN products p ON p.id = i.product_id
+       WHERE i.son_id = ? AND i.status = 'active'`
+    ).bind(son.id).all();
+    const investmentsTotal = (activeInvestments || []).reduce(
+      (sum, inv) => sum + investmentSnapshot(inv).currentValue, 0
+    );
+
+    const balance = Math.round((cashBalance + investmentsTotal) * 100) / 100;
+    withBalances.push({ ...son, balance, cashBalance });
   }
 
   return json({ sons: withBalances });

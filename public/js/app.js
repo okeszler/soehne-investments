@@ -8,6 +8,12 @@ function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
 }
 
+const escapeDiv = document.createElement('div');
+function escapeHtml(str) {
+  escapeDiv.textContent = str == null ? '' : String(str);
+  return escapeDiv.innerHTML;
+}
+
 let currentData = null;
 let historyChart = null;
 let calculatorChart = null;
@@ -341,7 +347,7 @@ function renderMessages() {
   const messages = currentData.messages || [];
 
   container.innerHTML = messages.map(m => `<div class="message-banner" data-id="${m.id}">
-      <div class="message-banner-body">${m.body}</div>
+      <div class="message-banner-body">${escapeHtml(m.body)}</div>
       <button class="message-banner-dismiss" data-id="${m.id}" type="button" aria-label="Nachricht schließen">×</button>
     </div>`).join('');
 
@@ -372,11 +378,11 @@ function renderInvestments() {
   body.innerHTML = investments.map((inv, i) => {
     const infoBtn = inv.description ? `<button class="info-btn" data-desc="inv-${i}" type="button" title="Info">ⓘ</button>` : '';
     const descRow = inv.description
-      ? `<tr id="desc-inv-${i}" style="display:none;"><td colspan="4"><div class="product-description">${inv.description}</div></td></tr>`
+      ? `<tr id="desc-inv-${i}" style="display:none;"><td colspan="4"><div class="product-description">${escapeHtml(inv.description)}</div></td></tr>`
       : '';
     const interestAtMaturity = Math.round((inv.maturityValue - inv.principal) * 100) / 100;
     return `<tr>
-      <td>${inv.productName}${infoBtn}</td>
+      <td>${escapeHtml(inv.productName)}${infoBtn}</td>
       <td>${inv.daysRemaining} Tage</td>
       <td>${eur(inv.currentValue)}</td>
       <td>${eur(interestAtMaturity)}</td>
@@ -411,10 +417,10 @@ function renderAvailableProducts(products) {
   body.innerHTML = products.map(p => {
     const infoBtn = p.description ? `<button class="info-btn" data-desc="prod-${p.id}" type="button" title="Info">ⓘ</button>` : '';
     const descRow = p.description
-      ? `<tr id="desc-prod-${p.id}" style="display:none;"><td colspan="4"><div class="product-description">${p.description}</div></td></tr>`
+      ? `<tr id="desc-prod-${p.id}" style="display:none;"><td colspan="4"><div class="product-description">${escapeHtml(p.description)}</div></td></tr>`
       : '';
     return `<tr>
-      <td>${p.name}${infoBtn}</td>
+      <td>${escapeHtml(p.name)}${infoBtn}</td>
       <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
       <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
       <td>${frequencyLabels[p.interest_frequency]}</td>
@@ -429,7 +435,7 @@ function renderAvailableProducts(products) {
   });
 
   const select = document.getElementById('invest-product');
-  select.innerHTML = products.map(p => `<option value="${p.id}">${p.name} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('');
+  select.innerHTML = products.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('');
 }
 
 document.getElementById('invest-form').addEventListener('submit', async (e) => {

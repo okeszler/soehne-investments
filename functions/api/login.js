@@ -14,6 +14,11 @@ export async function onRequestPost({ request, env }) {
   if (!results || results.length === 0) {
     return json({ error: 'PIN ungültig' }, { status: 401 });
   }
+  if (results.length > 1) {
+    // Zwei Söhne mit identischem PIN-Hash (sollte durch change-pin.js verhindert
+    // werden) — lieber ablehnen als willkürlich einen davon einloggen.
+    return json({ error: 'PIN mehrdeutig, bitte PIN ändern lassen' }, { status: 409 });
+  }
 
   const son = results[0];
   const token = await createSession(env, { role: 'son', sonId: son.id, name: son.name });

@@ -1,6 +1,13 @@
-const eur = (n) => new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' }).format(n);
+const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
+const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+
+const escapeDiv = document.createElement('div');
+function escapeHtml(str) {
+  escapeDiv.textContent = str == null ? '' : String(str);
+  return escapeDiv.innerHTML;
+}
 
 let sons = [];
 let activeSonId = null;
@@ -55,7 +62,7 @@ document.getElementById('logout-btn').addEventListener('click', async () => {
 function renderSonPicker() {
   const picker = document.getElementById('son-picker');
   picker.innerHTML = sons.map(s =>
-    `<button class="son-pill" data-id="${s.id}">${s.name} · ${eur(s.balance)}</button>`
+    `<button class="son-pill" data-id="${s.id}">${escapeHtml(s.name)} · ${eur(s.balance)}</button>`
   ).join('');
   picker.querySelectorAll('.son-pill').forEach(btn => {
     btn.addEventListener('click', () => selectSon(Number(btn.dataset.id)));
@@ -99,7 +106,7 @@ function renderRecurring() {
     return `<tr>
       <td class="${cls}">${typeLabels[r.type]}</td>
       <td class="${cls}">${eur(r.amount)}</td>
-      <td>${r.note || ''}</td>
+      <td>${escapeHtml(r.note || '')}</td>
       <td><button class="tx-delete" data-id="${r.id}">Löschen</button></td>
     </tr>`;
   }).join('');
@@ -223,10 +230,10 @@ function renderProducts() {
     body.innerHTML = products.map(p => {
       const infoBtn = p.description ? `<button class="info-btn" data-desc="${p.id}" type="button" title="Info">ⓘ</button>` : '';
       const descRow = p.description
-        ? `<tr id="desc-${p.id}" style="display:none;"><td colspan="5"><div class="product-description">${p.description}</div></td></tr>`
+        ? `<tr id="desc-${p.id}" style="display:none;"><td colspan="5"><div class="product-description">${escapeHtml(p.description)}</div></td></tr>`
         : '';
       return `<tr style="${p.active ? '' : 'opacity:0.5;'}">
-        <td>${p.name}${infoBtn}</td>
+        <td>${escapeHtml(p.name)}${infoBtn}</td>
         <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
         <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
         <td>${frequencyLabels[p.interest_frequency]}</td>
@@ -258,7 +265,7 @@ function renderProducts() {
   const select = document.getElementById('investment-product');
   const activeProducts = products.filter(p => p.active);
   select.innerHTML = activeProducts.length
-    ? activeProducts.map(p => `<option value="${p.id}">${p.name} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('')
+    ? activeProducts.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('')
     : '<option value="">Kein Produkt verfügbar</option>';
 }
 
@@ -329,7 +336,7 @@ function renderInvestments(investments) {
   empty.style.display = 'none';
 
   body.innerHTML = investments.map(inv => `<tr style="${inv.status === 'paid_out' ? 'opacity:0.5;' : ''}">
-      <td>${inv.product_name}</td>
+      <td>${escapeHtml(inv.product_name)}</td>
       <td>${eur(inv.principal)}</td>
       <td>${eur(inv.balance)}</td>
       <td>${dateFmt(inv.maturity_date)}</td>
@@ -365,7 +372,7 @@ document.getElementById('investment-form').addEventListener('submit', async (e) 
 function populateMessageRecipients() {
   const select = document.getElementById('message-recipient');
   select.innerHTML = '<option value="">Alle Söhne</option>' +
-    sons.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+    sons.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
 }
 
 async function loadMessages() {
@@ -386,8 +393,8 @@ function renderMessages(messages) {
   empty.style.display = 'none';
 
   body.innerHTML = messages.map(m => `<tr>
-      <td>${m.son_name || 'Alle'}</td>
-      <td>${m.body}</td>
+      <td>${escapeHtml(m.son_name || 'Alle')}</td>
+      <td>${escapeHtml(m.body)}</td>
       <td><button class="tx-delete" data-id="${m.id}">Löschen</button></td>
     </tr>`).join('');
 
