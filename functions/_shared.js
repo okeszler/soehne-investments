@@ -137,6 +137,46 @@ export async function createInvestment(env, sonId, productId, amount) {
   return { ok: true };
 }
 
+const PERIOD_DAYS = { monthly: 30, quarterly: 91, yearly: 365, maturity: Infinity };
+
+// Momentaufnahme einer Investition: aktueller Wert (Kapital + bis heute anteilig
+// aufgelaufene Zinsen), voraussichtlicher Endwert bei Fälligkeit (simuliert dieselbe
+// Perioden-Logik wie der Cron-Job, ohne etwas zu buchen) und verbleibende Tage.
+export function investmentSnapshot(inv) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const lastCredit = new Date(inv.last_credit_date + 'T00:00:00Z');
+  const maturity = new Date(inv.maturity_date + 'T00:00:00Z');
+
+  const elapsedDays = Math.max(0, Math.floor((today - lastCredit) / 86400000));
+  const currentValue = Math.round((inv.balance + inv.balance * inv.apy * elapsedDays / 365) * 100) / 100;
+
+  const daysRemaining = Math.max(0, Math.ceil((maturity - today) / 86400000));
+
+  const periodDays = PERIOD_DAYS[inv.interest_frequency] || 30;
+  let value = inv.balance;
+  let cursor = lastCredit;
+  if (periodDays === Infinity) {
+    const days = Math.max(0, Math.round((maturity - cursor) / 86400000));
+    value += value * inv.apy * days / 365;
+  } else {
+    while (true) {
+      const next = new Date(cursor);
+      next.setUTCDate(next.getUTCDate() + periodDays);
+      if (next >= maturity) {
+        const days = Math.max(0, Math.round((maturity - cursor) / 86400000));
+        value += value * inv.apy * days / 365;
+        break;
+      }
+      value += value * inv.apy * periodDays / 365;
+      cursor = next;
+    }
+  }
+  const maturityValue = Math.round(value * 100) / 100;
+
+  return { currentValue, maturityValue, daysRemaining };
+}
+
 // Schickt eine Push-Benachrichtigung an alle Geräte eines oder mehrerer Söhne.
 // sonIds: Array von Sohn-IDs, oder null für alle Söhne. Räumt abgelaufene Abos
 // (404/410 vom Push-Dienst) automatisch aus der DB auf.
@@ -171,23 +211,3 @@ export async function sendPushToSons(env, sonIds, payload) {
   }
 }
 
-// Zinseszins-Hochrechnung: Startkapital, Jahreszins, Anzahl Jahre, monatliche Sparrate (optional, hier 0)
-// Rechnet monatlich, liefert aber pro Jahr einen Punkt: Kapital = reine Einzahlungen (Startkapital +
-// bisherige Sparraten, ohne Zinsen), Zinsen = kumulierte Gesamtsumme aller bisher verdienten Zinsen.
-// Das Zinsen-Band wächst dadurch sichtbar beschleunigt (klassischer Zinseszins-Effekt).
-export function projectCompoundGrowth(startCapital, annualRate, years, monthlyContribution = 0) {
-  const monthlyRate = annualRate / 12;
-  const round = (n) => Math.round(n * 100) / 100;
-  const points = [{ year: 0, value: round(startCapital), capital: round(startCapital), interest: 0 }];
-  let value = startCapital;
-  let capital = startCapital;
-  const totalMonths = Math.round(years * 12);
-  for (let m = 1; m <= totalMonths; m++) {
-    value = value * (1 + monthlyRate) + monthlyContribution;
-    capital += monthlyContribution;
-    if (m % 12 === 0) {
-      points.push({ year: m / 12, value: round(value), capital: round(capital), interest: round(value - capital) });
-    }
-  }
-  return points;
-}

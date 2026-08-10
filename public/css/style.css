@@ -339,41 +339,6 @@ input, select {
   display: inline-block;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .stamp-balance::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(100deg, transparent 40%, rgba(255,255,255,0.75) 50%, transparent 60%);
-    mix-blend-mode: overlay;
-    transform: translateX(-130%);
-    animation: shimmer-sweep 6s ease-in-out infinite;
-    will-change: transform;
-    pointer-events: none;
-  }
-
-  .stamp-balance::after {
-    content: '✨';
-    position: absolute;
-    top: -4px;
-    right: -24px;
-    font-size: 0.35em;
-    animation: twinkle 2.6s ease-in-out infinite;
-    will-change: transform, opacity;
-  }
-}
-
-@keyframes shimmer-sweep {
-  0%, 20% { transform: translateX(-130%); }
-  55%, 70% { transform: translateX(130%); }
-  100% { transform: translateX(130%); }
-}
-
-@keyframes twinkle {
-  0%, 100% { opacity: 0.2; transform: scale(0.75) rotate(0deg); }
-  50% { opacity: 1; transform: scale(1.15) rotate(18deg); }
-}
-
 .stamp-tax-note {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -526,6 +491,12 @@ canvas { max-width: 100%; }
   background: var(--input-bg);
   color: var(--text);
   resize: vertical;
+}
+
+.calc-duration {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 8px;
 }
 
 .admin-form .full { grid-column: 1 / -1; }

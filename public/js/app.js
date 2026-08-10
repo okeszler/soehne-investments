@@ -10,7 +10,7 @@ function cssVar(name) {
 
 let currentData = null;
 let historyChart = null;
-let projectionChart = null;
+let calculatorChart = null;
 
 function urlBase64ToUint8Array(base64String) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -153,15 +153,7 @@ function showDashboard() {
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
   animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
-  const hasInvestments = (currentData.investments || []).length > 0;
-
-  const flexLine = document.getElementById('flex-balance-line');
-  if (hasInvestments) {
-    flexLine.style.display = 'block';
-    flexLine.textContent = `davon FLEX: ${eur(currentData.cashBalance)}`;
-  } else {
-    flexLine.style.display = 'none';
-  }
+  document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
@@ -175,22 +167,10 @@ function showDashboard() {
 
   try {
     renderHistoryChart();
-    renderProjectionChart('5');
+    renderCalculator();
   } catch (err) {
     console.error('Diagramme konnten nicht geladen werden:', err);
   }
-
-  document.querySelectorAll('.horizon-tab').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.horizon-tab').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
-      try {
-        renderProjectionChart(btn.dataset.years);
-      } catch (err) {
-        console.error('Diagramm konnte nicht geladen werden:', err);
-      }
-    });
-  });
 }
 
 function renderHistoryChart() {
@@ -235,42 +215,83 @@ function renderHistoryChart() {
   });
 }
 
-function renderProjectionChart(years) {
-  const points = currentData.projections[years];
-  const ctx = document.getElementById('projection-chart');
+// Simuliert den Wertverlauf periodenweise (identisch zur Cron-Logik: an jeder
+// Periodengrenze wird Zins aufs bisherige Kapital gutgeschrieben und compoundet;
+// "endfällig" ist eine einzige Periode über die volle Laufzeit).
+function simulateCompoundSeries(startCapital, totalDays, apy, frequency) {
+  const periodDaysMap = { monthly: 30, quarterly: 91, yearly: 365 };
+  const periodDays = frequency === 'maturity' ? totalDays : periodDaysMap[frequency];
+  const boundaries = [0];
+  const valueAt = new Map([[0, startCapital]]);
+  let value = startCapital;
+  let elapsed = 0;
+  while (elapsed < totalDays && periodDays > 0) {
+    const step = Math.min(periodDays, totalDays - elapsed);
+    value += value * apy * step / 365;
+    elapsed += step;
+    boundaries.push(elapsed);
+    valueAt.set(elapsed, Math.round(value * 100) / 100);
+  }
+  return { boundaries, valueAt, finalValue: valueAt.get(boundaries[boundaries.length - 1]) };
+}
 
-  const labels = points.map(p => p.year === 0 ? 'Start' : `Jahr ${p.year}`);
-  const capitalValues = points.map(p => p.capital);
-  const interestValues = points.map(p => p.interest);
+function valueAtDay(boundaries, valueAt, day) {
+  let v = valueAt.get(0);
+  for (const b of boundaries) {
+    if (b <= day) v = valueAt.get(b); else break;
+  }
+  return v;
+}
 
+function renderCalculator() {
+  const startCapital = parseFloat(document.getElementById('calc-capital').value) || 0;
+  const durationValue = parseFloat(document.getElementById('calc-duration').value) || 0;
+  const durationUnit = document.getElementById('calc-duration-unit').value;
+  const apy = (parseFloat(document.getElementById('calc-rate').value) || 0) / 100;
+  const frequency = document.getElementById('calc-frequency').value;
+
+  const totalDays = Math.max(1, Math.round(durationValue * (durationUnit === 'years' ? 365 : 30.4368)));
+  const { boundaries, valueAt, finalValue } = simulateCompoundSeries(startCapital, totalDays, apy, frequency);
+
+  let labels, capitalValues, interestValues;
+  if (frequency === 'maturity') {
+    labels = ['Start', 'Fällig'];
+    capitalValues = [startCapital, startCapital];
+    interestValues = [0, Math.round((finalValue - startCapital) * 100) / 100];
+  } else {
+    const yearly = totalDays > 365;
+    const bucketDays = yearly ? 365 : 30;
+    labels = [];
+    capitalValues = [];
+    interestValues = [];
+    for (let day = 0, i = 0; ; day += bucketDays, i++) {
+      const d = Math.min(day, totalDays);
+      const v = valueAtDay(boundaries, valueAt, d);
+      labels.push(i === 0 ? 'Start' : (yearly ? `Jahr ${i}` : `Monat ${i}`));
+      capitalValues.push(startCapital);
+      interestValues.push(Math.round((v - startCapital) * 100) / 100);
+      if (d >= totalDays) break;
+    }
+  }
+
+  const ctx = document.getElementById('calculator-chart');
   const muted = cssVar('--muted');
   const grid = cssVar('--chart-grid');
 
-  if (projectionChart) projectionChart.destroy();
-  projectionChart = new Chart(ctx, {
+  if (calculatorChart) calculatorChart.destroy();
+  calculatorChart = new Chart(ctx, {
     type: 'bar',
     data: {
       labels,
       datasets: [
-        {
-          label: 'Kapital',
-          data: capitalValues,
-          backgroundColor: cssVar('--stone')
-        },
-        {
-          label: 'Zinsen',
-          data: interestValues,
-          backgroundColor: cssVar('--mist')
-        }
+        { label: 'Kapital', data: capitalValues, backgroundColor: cssVar('--stone') },
+        { label: 'Zinsen', data: interestValues, backgroundColor: cssVar('--mist') }
       ]
     },
     options: {
       animation: chartAnimation,
       plugins: {
-        legend: {
-          display: true,
-          labels: { color: muted, boxWidth: 12, font: { size: 11 } }
-        }
+        legend: { display: true, labels: { color: muted, boxWidth: 12, font: { size: 11 } } }
       },
       scales: {
         x: { stacked: true, ticks: { color: muted }, grid: { display: false } },
@@ -279,18 +300,20 @@ function renderProjectionChart(years) {
     }
   });
 
-  const start = currentData.cashBalance;
-  const end = points[points.length - 1].value;
-  const rateText = `FLEX-Zinssatz von ${(currentData.annualRate * 100).toFixed(2).replace('.', ',')}% p.a.`;
-  const contribution = currentData.monthlyContribution || 0;
-  const contributionText = contribution > 0
-    ? ` und deiner automatischen monatlichen Zahlung von ${eur(contribution)} (z.B. Taschengeld)`
-    : contribution < 0
-      ? ` und deiner automatischen monatlichen Abbuchung von ${eur(Math.abs(contribution))}`
-      : ' und ohne weitere Ein-/Auszahlungen';
-  document.getElementById('projection-footnote').textContent =
-    `Fiktiv: bei ${rateText}${contributionText} würde dein FLEX-Guthaben von ${eur(start)} in ${years} Jahr(en) rechnerisch auf ${eur(end)} wachsen.`;
+  const durationText = `${durationValue} ${durationUnit === 'years' ? 'Jahr(en)' : 'Monat(en)'}`;
+  const rateText = `${(apy * 100).toFixed(2).replace('.', ',')}% p.a.`;
+  document.getElementById('calculator-footnote').textContent =
+    `Bei ${rateText} (Zinszubuchung ${frequencyLabels[frequency]}) würde aus ${eur(startCapital)} in ${durationText} rechnerisch ${eur(finalValue)} werden (davon ${eur(finalValue - startCapital)} Zinsen).`;
 }
+
+document.getElementById('calculator-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  try {
+    renderCalculator();
+  } catch (err) {
+    console.error('Rechner konnte nicht aktualisiert werden:', err);
+  }
+});
 
 function renderLedger() {
   const body = document.getElementById('ledger-body');
@@ -351,11 +374,12 @@ function renderInvestments() {
     const descRow = inv.description
       ? `<tr id="desc-inv-${i}" style="display:none;"><td colspan="4"><div class="product-description">${inv.description}</div></td></tr>`
       : '';
+    const interestAtMaturity = Math.round((inv.maturityValue - inv.principal) * 100) / 100;
     return `<tr>
       <td>${inv.productName}${infoBtn}</td>
-      <td>${eur(inv.principal)}</td>
-      <td>${eur(inv.balance)}</td>
-      <td>${dateFmt(inv.maturityDate)}</td>
+      <td>${inv.daysRemaining} Tage</td>
+      <td>${eur(inv.currentValue)}</td>
+      <td>${eur(interestAtMaturity)}</td>
     </tr>${descRow}`;
   }).join('');
 
@@ -471,8 +495,7 @@ document.addEventListener('themechange', () => {
   if (!currentData) return;
   try {
     renderHistoryChart();
-    const activeTab = document.querySelector('.horizon-tab.active');
-    renderProjectionChart(activeTab ? activeTab.dataset.years : '5');
+    renderCalculator();
   } catch (err) {
     console.error('Diagramme konnten nach Theme-Wechsel nicht neu geladen werden:', err);
   }

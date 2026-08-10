@@ -57,15 +57,15 @@
   <div class="stamp-card">
     <div class="stamp-eyebrow"><span>Kontostand</span><span id="stamp-date"></span></div>
     <div class="stamp-balance" id="balance-amount">€ 0,00</div>
-    <div class="stamp-tax-note">Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit — diese übernimmt der Papi.</div>
+    <div class="stamp-tax-note">Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit — diese übernimmt Papi.</div>
+    <div class="stamp-daily" id="flex-balance-line"></div>
     <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span></div>
-    <div class="stamp-daily" id="flex-balance-line" style="display:none;"></div>
   </div>
 
   <div class="section" id="investments-section" style="display:none;">
     <div class="section-title">Investitionen</div>
     <table class="ledger-table" id="investment-table">
-      <thead><tr><th>Produkt</th><th>Kapital</th><th>Aktueller Wert</th><th>Fällig am</th></tr></thead>
+      <thead><tr><th>Produkt</th><th>Restzeit</th><th>Kapital + Zinsen heute</th><th>Zinsen bei Endfälligkeit</th></tr></thead>
       <tbody id="investment-body"></tbody>
     </table>
   </div>
@@ -90,15 +90,27 @@
   </div>
 
   <div class="section">
-    <div class="section-title">FLEX-Hochrechnung (Zinseszins)</div>
-    <div class="horizon-tabs" id="horizon-tabs">
-      <button class="horizon-tab" data-years="1">1 Jahr</button>
-      <button class="horizon-tab active" data-years="5">5 Jahre</button>
-      <button class="horizon-tab" data-years="10">10 Jahre</button>
-      <button class="horizon-tab" data-years="20">20 Jahre</button>
-    </div>
-    <canvas id="projection-chart" height="90"></canvas>
-    <div class="projection-footnote" id="projection-footnote"></div>
+    <div class="section-title">Zinseszinsrechner</div>
+    <form class="admin-form" id="calculator-form">
+      <input type="number" id="calc-capital" step="0.01" min="0" placeholder="Startkapital in €" value="1000" required>
+      <div class="calc-duration">
+        <input type="number" id="calc-duration" step="1" min="1" placeholder="Laufzeit" value="5" required>
+        <select id="calc-duration-unit">
+          <option value="months">Monate</option>
+          <option value="years" selected>Jahre</option>
+        </select>
+      </div>
+      <input type="number" id="calc-rate" step="0.01" min="0" placeholder="Zinssatz in % (z.B. 5)" value="5" required>
+      <select id="calc-frequency" required>
+        <option value="monthly">Zinszubuchung monatlich</option>
+        <option value="quarterly">Zinszubuchung vierteljährlich</option>
+        <option value="yearly" selected>Zinszubuchung jährlich</option>
+        <option value="maturity">Endfällig (bei Fälligkeit)</option>
+      </select>
+      <button type="submit" class="admin-submit">Berechnen</button>
+    </form>
+    <canvas id="calculator-chart" height="90"></canvas>
+    <div class="projection-footnote" id="calculator-footnote"></div>
   </div>
 
   <div class="section">
