@@ -2,26 +2,26 @@
 
 :root {
   /* feste Markenfarben, unabhängig vom Theme */
-  --ink: #2A3132;
-  --ink-soft: #336B87;
-  --paper-line: #336B87;
-  --brass: #336B87;
-  --sage: #336B87;
-  --rust: #763626;
-  --mist: #90AFC5;
-  --stone: #336B87;
+  --ink: #142E2A;
+  --ink-soft: #20948B;
+  --paper-line: #20948B;
+  --brass: #20948B;
+  --sage: #20948B;
+  --rust: #DE7A22;
+  --mist: #F4CC70;
+  --stone: #20948B;
 
   --font-display: 'Fraunces', serif;
   --font-body: 'IBM Plex Sans', sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
 
   /* Dark-Theme (Standard) */
-  --bg: #2A3132;
-  --text: #90AFC5;
-  --muted: #90AFC5;
-  --paper: #90AFC5;
-  --brass-bright: #90AFC5;
-  --accent-text: #2A3132;
+  --bg: #142E2A;
+  --text: #F4CC70;
+  --muted: #6AB187;
+  --paper: #F4CC70;
+  --brass-bright: #F4CC70;
+  --accent-text: #142E2A;
   --section-bg: rgba(255,255,255,0.03);
   --section-border: rgba(255,255,255,0.08);
   --divider: rgba(255,255,255,0.1);
@@ -33,20 +33,20 @@
 }
 
 :root[data-theme="light"] {
-  --bg: #F1F5F7;
-  --text: #2A3132;
-  --muted: #5C7480;
+  --bg: #FAF3E3;
+  --text: #142E2A;
+  --muted: #20948B;
   --paper: #FFFFFF;
-  --brass-bright: #336B87;
+  --brass-bright: #20948B;
   --accent-text: #FFFFFF;
-  --section-bg: rgba(42,49,50,0.035);
-  --section-border: rgba(42,49,50,0.09);
-  --divider: rgba(42,49,50,0.12);
-  --input-bg: rgba(42,49,50,0.03);
-  --input-border: rgba(42,49,50,0.18);
-  --border-1: rgba(42,49,50,0.18);
-  --border-2: rgba(42,49,50,0.4);
-  --chart-grid: rgba(42,49,50,0.08);
+  --section-bg: rgba(20,46,42,0.035);
+  --section-border: rgba(20,46,42,0.09);
+  --divider: rgba(20,46,42,0.12);
+  --input-bg: rgba(20,46,42,0.03);
+  --input-border: rgba(20,46,42,0.18);
+  --border-1: rgba(20,46,42,0.18);
+  --border-2: rgba(20,46,42,0.4);
+  --chart-grid: rgba(20,46,42,0.08);
 }
 
 * { box-sizing: border-box; }
@@ -313,7 +313,7 @@ input, select {
   top: -60px;
   width: 180px;
   height: 180px;
-  border: 3px dashed rgba(51, 107, 135, 0.35);
+  border: 3px dashed rgba(32, 148, 139, 0.35);
   border-radius: 50%;
   transform: rotate(-12deg);
 }
