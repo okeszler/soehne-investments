@@ -1,4 +1,4 @@
-import { requireSonSession, computeBalanceHistory, computeFlexAccruedInterest, investmentSnapshot, json } from '../_shared.js';
+import { requireSonSession, computeBalanceHistory, computeFlexAccruedInterest, investmentSnapshot, investmentValueAtDate, json } from '../_shared.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await requireSonSession(request, env);
@@ -16,14 +16,15 @@ export async function onRequestGet({ request, env }) {
 
   const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate);
 
-  const { results: activeInvestments } = await env.DB.prepare(
-    `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date, i.last_credit_date,
+  const { results: allInvestments } = await env.DB.prepare(
+    `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date, i.last_credit_date, i.status,
             p.name as product_name, p.apy, p.lock_days, p.interest_frequency, p.description
      FROM investments i JOIN products p ON p.id = i.product_id
-     WHERE i.son_id = ? AND i.status = 'active' ORDER BY i.maturity_date ASC`
+     WHERE i.son_id = ? ORDER BY i.maturity_date ASC`
   ).bind(son.id).all();
 
-  const investmentsWithSnapshot = (activeInvestments || []).map(inv => ({
+  const activeInvestments = (allInvestments || []).filter(inv => inv.status === 'active');
+  const investmentsWithSnapshot = activeInvestments.map(inv => ({
     ...inv,
     ...investmentSnapshot(inv)
   }));
@@ -32,6 +33,18 @@ export async function onRequestGet({ request, env }) {
     investmentsWithSnapshot.reduce((sum, inv) => sum + inv.currentValue, 0) * 100
   ) / 100;
   const balance = Math.round((cashBalance + flexAccruedInterest + investmentsTotal) * 100) / 100;
+
+  // Der Verlauf basiert sonst nur auf FLEX-Transaktionen — beim Anlegen einer
+  // Investition gibt's dort eine `withdrawal`, wodurch der Graph einbrechen würde,
+  // obwohl das Kapital nur gebunden statt weg ist. Rechnet den gebundenen Wert
+  // jeder Investition (aktiv + bereits ausbezahlt) zu jedem Verlaufspunkt dazu.
+  const historyWithInvestments = history.map(h => {
+    const asOfDate = new Date(h.date + 'T00:00:00Z');
+    const investedValue = (allInvestments || []).reduce(
+      (sum, inv) => sum + investmentValueAtDate(inv, asOfDate), 0
+    );
+    return { ...h, balance: Math.round((h.balance + investedValue) * 100) / 100 };
+  });
 
   const dailyInterest = Math.round((
     (cashBalance * son.annual_rate / 365) +
@@ -52,7 +65,7 @@ export async function onRequestGet({ request, env }) {
     cashBalance,
     flexAccruedInterest,
     dailyInterest,
-    history,
+    history: historyWithInvestments,
     transactions: txs,
     messages: (messages || []).map(m => ({ id: m.id, body: m.body, createdAt: m.created_at })),
     investments: investmentsWithSnapshot.map(inv => ({

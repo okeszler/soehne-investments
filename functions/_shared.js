@@ -180,6 +180,34 @@ export async function createInvestment(env, sonId, productId, amount) {
 
 const PERIOD_DAYS = { monthly: 30, quarterly: 91, yearly: 365, maturity: Infinity };
 
+// Compoundet `principal` periodenweise (gemäß frequency) von `fromDate` bis
+// `toDate`, identisch zur Cron-Logik. Gemeinsame Basis für investmentSnapshot()
+// (Endwert bei Fälligkeit) und investmentValueAtDate() (historischer Wert für
+// den Verlaufs-Graph).
+function compoundValue(principal, apy, frequency, fromDate, toDate) {
+  if (toDate <= fromDate) return Math.round(principal * 100) / 100;
+  const periodDays = PERIOD_DAYS[frequency] || 30;
+  let value = principal;
+  let cursor = fromDate;
+  if (periodDays === Infinity) {
+    const days = Math.max(0, Math.round((toDate - cursor) / 86400000));
+    value += value * apy * days / 365;
+  } else {
+    while (true) {
+      const next = new Date(cursor);
+      next.setUTCDate(next.getUTCDate() + periodDays);
+      if (next >= toDate) {
+        const days = Math.max(0, Math.round((toDate - cursor) / 86400000));
+        value += value * apy * days / 365;
+        break;
+      }
+      value += value * apy * periodDays / 365;
+      cursor = next;
+    }
+  }
+  return Math.round(value * 100) / 100;
+}
+
 // Momentaufnahme einer Investition: aktueller Wert (Kapital + bis heute anteilig
 // aufgelaufene Zinsen), voraussichtlicher Endwert bei Fälligkeit (simuliert dieselbe
 // Perioden-Logik wie der Cron-Job, ohne etwas zu buchen) und verbleibende Tage.
@@ -194,28 +222,22 @@ export function investmentSnapshot(inv) {
 
   const daysRemaining = Math.max(0, Math.ceil((maturity - today) / 86400000));
 
-  const periodDays = PERIOD_DAYS[inv.interest_frequency] || 30;
-  let value = inv.balance;
-  let cursor = lastCredit;
-  if (periodDays === Infinity) {
-    const days = Math.max(0, Math.round((maturity - cursor) / 86400000));
-    value += value * inv.apy * days / 365;
-  } else {
-    while (true) {
-      const next = new Date(cursor);
-      next.setUTCDate(next.getUTCDate() + periodDays);
-      if (next >= maturity) {
-        const days = Math.max(0, Math.round((maturity - cursor) / 86400000));
-        value += value * inv.apy * days / 365;
-        break;
-      }
-      value += value * inv.apy * periodDays / 365;
-      cursor = next;
-    }
-  }
-  const maturityValue = Math.round(value * 100) / 100;
+  const maturityValue = compoundValue(inv.balance, inv.apy, inv.interest_frequency, lastCredit, maturity);
 
   return { currentValue, maturityValue, daysRemaining };
+}
+
+// Wert einer Investition an einem beliebigen historischen Datum (ausgehend vom
+// Startkapital, nicht vom aktuellen `balance`-Feld — setzt voraus, dass es keine
+// vorzeitige Auflösung gab, was diese App aktuell nicht unterstützt). Für den
+// Verlaufs-Graph: 0 vor Start, gebundener Wert zwischen Start und Fälligkeit,
+// und 0 nach Fälligkeit (das Kapital ist dann schon als `deposit` in den FLEX-
+// Transaktionen und damit im Cash-Verlauf enthalten).
+export function investmentValueAtDate(inv, asOfDate) {
+  const start = new Date(inv.start_date + 'T00:00:00Z');
+  const maturity = new Date(inv.maturity_date + 'T00:00:00Z');
+  if (asOfDate < start || asOfDate >= maturity) return 0;
+  return compoundValue(inv.principal, inv.apy, inv.interest_frequency, start, asOfDate);
 }
 
 // Schickt eine Push-Benachrichtigung an alle Geräte eines oder mehrerer Söhne.
