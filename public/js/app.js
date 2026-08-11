@@ -161,6 +161,7 @@ function showDashboard() {
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
   document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);
+  renderKestExplainer();
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
@@ -179,6 +180,27 @@ function showDashboard() {
     console.error('Diagramme konnten nicht geladen werden:', err);
   }
 }
+
+const KEST_RATE = 0.275;
+const pct = v => `${(v * 100).toFixed(2).replace('.', ',')}%`;
+
+function renderKestExplainer() {
+  const rate = currentData.annualRate;
+  const netRate = rate * (1 - KEST_RATE);
+  document.getElementById('kest-explainer').innerHTML =
+    `Normale Banken behalten in Österreich automatisch 27,5% deiner Zinsgewinne als
+    <strong>Kapitalertragssteuer (KESt)</strong> ein, bevor du sie siehst. Papi übernimmt
+    diese Steuer für dich — du bekommst den vollen Zinssatz ohne Abzug.<br><br>
+    Konkret: bei deinem FLEX-Zinssatz von ${pct(rate)} p.a. würde eine normale Bank dir
+    nach KESt effektiv nur ${pct(netRate)} p.a. auszahlen. Ein Zinssatz, der hier
+    "niedrig" wirkt, kann dir also trotzdem mehr bringen als ein höherer bei einer
+    echten Bank.`;
+}
+
+document.getElementById('kest-info-btn').addEventListener('click', () => {
+  const el = document.getElementById('kest-explainer');
+  el.style.display = el.style.display === 'none' ? '' : 'none';
+});
 
 function renderHistoryChart() {
   const ctx = document.getElementById('history-chart');
