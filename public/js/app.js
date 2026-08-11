@@ -224,19 +224,35 @@ function renderHistoryChart() {
 // Simuliert den Wertverlauf periodenweise (identisch zur Cron-Logik: an jeder
 // Periodengrenze wird Zins aufs bisherige Kapital gutgeschrieben und compoundet;
 // "endfällig" ist eine einzige Periode über die volle Laufzeit).
-function simulateCompoundSeries(startCapital, totalDays, apy, frequency) {
+const CONTRIBUTION_DAYS = 30;
+
+function contributedCapitalAtDay(startCapital, monthlyContribution, day) {
+  return startCapital + monthlyContribution * Math.floor(day / CONTRIBUTION_DAYS);
+}
+
+function simulateCompoundSeries(startCapital, totalDays, apy, frequency, monthlyContribution = 0) {
   const periodDaysMap = { monthly: 30, quarterly: 91, yearly: 365 };
   const periodDays = frequency === 'maturity' ? totalDays : periodDaysMap[frequency];
+
+  const ticks = new Set();
+  for (let d = periodDays; d < totalDays && periodDays > 0; d += periodDays) ticks.add(d);
+  if (monthlyContribution > 0) {
+    for (let d = CONTRIBUTION_DAYS; d < totalDays; d += CONTRIBUTION_DAYS) ticks.add(d);
+  }
+  ticks.add(totalDays);
+  const sortedTicks = Array.from(ticks).sort((a, b) => a - b);
+
   const boundaries = [0];
   const valueAt = new Map([[0, startCapital]]);
   let value = startCapital;
-  let elapsed = 0;
-  while (elapsed < totalDays && periodDays > 0) {
-    const step = Math.min(periodDays, totalDays - elapsed);
-    value += value * apy * step / 365;
-    elapsed += step;
-    boundaries.push(elapsed);
-    valueAt.set(elapsed, Math.round(value * 100) / 100);
+  let last = 0;
+  for (const d of sortedTicks) {
+    const step = d - last;
+    if (step > 0) value += value * apy * step / 365;
+    if (monthlyContribution > 0 && d % CONTRIBUTION_DAYS === 0) value += monthlyContribution;
+    last = d;
+    boundaries.push(d);
+    valueAt.set(d, Math.round(value * 100) / 100);
   }
   return { boundaries, valueAt, finalValue: valueAt.get(boundaries[boundaries.length - 1]) };
 }
@@ -254,16 +270,18 @@ function renderCalculator() {
   const durationValue = parseFloat(document.getElementById('calc-duration').value) || 0;
   const durationUnit = document.getElementById('calc-duration-unit').value;
   const apy = (parseFloat(document.getElementById('calc-rate').value) || 0) / 100;
+  const monthlyContribution = parseFloat(document.getElementById('calc-contribution').value) || 0;
   const frequency = document.getElementById('calc-frequency').value;
 
   const totalDays = Math.max(1, Math.round(durationValue * (durationUnit === 'years' ? 365 : 30.4368)));
-  const { boundaries, valueAt, finalValue } = simulateCompoundSeries(startCapital, totalDays, apy, frequency);
+  const { boundaries, valueAt, finalValue } = simulateCompoundSeries(startCapital, totalDays, apy, frequency, monthlyContribution);
+  const totalContributed = contributedCapitalAtDay(startCapital, monthlyContribution, totalDays);
 
   let labels, capitalValues, interestValues;
   if (frequency === 'maturity') {
     labels = ['Start', 'Fällig'];
-    capitalValues = [startCapital, startCapital];
-    interestValues = [0, Math.round((finalValue - startCapital) * 100) / 100];
+    capitalValues = [startCapital, totalContributed];
+    interestValues = [0, Math.round((finalValue - totalContributed) * 100) / 100];
   } else {
     const yearly = totalDays > 365;
     const bucketDays = yearly ? 365 : 30;
@@ -273,9 +291,10 @@ function renderCalculator() {
     for (let day = 0, i = 0; ; day += bucketDays, i++) {
       const d = Math.min(day, totalDays);
       const v = valueAtDay(boundaries, valueAt, d);
+      const contributed = contributedCapitalAtDay(startCapital, monthlyContribution, d);
       labels.push(i === 0 ? 'Start' : (yearly ? `Jahr ${i}` : `Monat ${i}`));
-      capitalValues.push(startCapital);
-      interestValues.push(Math.round((v - startCapital) * 100) / 100);
+      capitalValues.push(contributed);
+      interestValues.push(Math.round((v - contributed) * 100) / 100);
       if (d >= totalDays) break;
     }
   }
@@ -308,8 +327,11 @@ function renderCalculator() {
 
   const durationText = `${durationValue} ${durationUnit === 'years' ? 'Jahr(en)' : 'Monat(en)'}`;
   const rateText = `${(apy * 100).toFixed(2).replace('.', ',')}% p.a.`;
+  const contributionText = monthlyContribution > 0
+    ? ` zzgl. ${eur(monthlyContribution)} monatlichem Sparbeitrag (insgesamt ${eur(totalContributed)} eingezahltes Kapital)`
+    : '';
   document.getElementById('calculator-footnote').textContent =
-    `Bei ${rateText} (Zinszubuchung ${frequencyLabels[frequency]}) würde aus ${eur(startCapital)} in ${durationText} rechnerisch ${eur(finalValue)} werden (davon ${eur(finalValue - startCapital)} Zinsen).`;
+    `Bei ${rateText} (Zinszubuchung ${frequencyLabels[frequency]}) würde aus ${eur(startCapital)}${contributionText} in ${durationText} rechnerisch ${eur(finalValue)} werden (davon ${eur(finalValue - totalContributed)} Zinsen).`;
 }
 
 document.getElementById('calculator-form').addEventListener('submit', (e) => {
@@ -464,6 +486,32 @@ document.getElementById('invest-form').addEventListener('submit', async (e) => {
     refreshedMsgEl.classList.add('pin-change-success');
   } else {
     msgEl.textContent = data.error || 'Investition konnte nicht angelegt werden.';
+  }
+});
+
+document.getElementById('payout-request-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const msgEl = document.getElementById('payout-request-message');
+  msgEl.textContent = '';
+  msgEl.classList.remove('pin-change-success');
+
+  const body = {
+    amount: parseFloat(document.getElementById('payout-amount').value),
+    note: document.getElementById('payout-note').value
+  };
+  const res = await fetch('/api/payout-request', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await res.json();
+  if (res.ok) {
+    document.getElementById('payout-amount').value = '';
+    document.getElementById('payout-note').value = '';
+    msgEl.textContent = 'Antrag gesendet — Papi wurde informiert.';
+    msgEl.classList.add('pin-change-success');
+  } else {
+    msgEl.textContent = data.error || 'Antrag konnte nicht gesendet werden.';
   }
 });
 

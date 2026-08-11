@@ -111,6 +111,30 @@ export function computeFlexAccruedInterest(transactions, cashBalance, annualRate
   return Math.round((cashBalance * annualRate * daysSinceCredit / 365) * 100) / 100;
 }
 
+// Schickt eine einfache Text-E-Mail über die Resend API. Wirft nicht bei
+// Fehlern (E-Mail-Versand soll den auslösenden Request nie blockieren) —
+// Aufrufer sollten den Rückgabewert prüfen, wenn sie es loggen wollen.
+export async function sendEmail(env, { to, subject, text }) {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Söhne-Investment <onboarding@resend.dev>',
+        to: [to],
+        subject,
+        text
+      })
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 export const MIN_INVESTMENT_AMOUNT = 100;
 
 // Legt eine Investition an: prüft Produkt + FLEX-Guthaben, bucht eine Auszahlung auf

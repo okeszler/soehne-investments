@@ -85,6 +85,16 @@
   </div>
 
   <div class="section">
+    <div class="section-title">Auszahlung beantragen</div>
+    <form class="admin-form" id="payout-request-form">
+      <input type="number" id="payout-amount" step="0.01" min="0.01" placeholder="Betrag in €" required>
+      <input type="text" id="payout-note" placeholder="Notiz (optional)" maxlength="500">
+      <button type="submit" class="admin-submit">Antrag senden</button>
+    </form>
+    <div id="payout-request-message" class="pin-change-message"></div>
+  </div>
+
+  <div class="section">
     <div class="section-title">Verlauf</div>
     <canvas id="history-chart" height="90"></canvas>
   </div>
@@ -102,6 +112,8 @@
       </div>
       <label for="calc-rate" class="calc-field-label full">Zinssatz in % pro Jahr</label>
       <input type="number" id="calc-rate" step="0.01" min="0" placeholder="z.B. 5" value="5" required>
+      <label for="calc-contribution" class="calc-field-label full">Monatlicher Sparbeitrag in € (optional)</label>
+      <input type="number" id="calc-contribution" step="0.01" min="0" placeholder="0" value="0">
       <select id="calc-frequency" required>
         <option value="monthly">Zinszubuchung monatlich</option>
         <option value="quarterly">Zinszubuchung vierteljährlich</option>
