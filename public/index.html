@@ -55,11 +55,30 @@
   <div id="message-banners"></div>
 
   <div class="stamp-card">
-    <div class="stamp-eyebrow"><span>Kontostand</span><span id="stamp-date"></span></div>
+    <div class="stamp-eyebrow"><span>Gesamtkapital</span><span id="stamp-date"></span></div>
     <div class="stamp-balance" id="balance-amount">€ 0,00</div>
     <div class="stamp-tax-note">Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit — diese übernimmt Papi.</div>
     <div class="stamp-daily" id="flex-balance-line"></div>
     <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span></div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">Verlauf</div>
+    <canvas id="history-chart" height="90"></canvas>
+  </div>
+
+  <div class="section">
+    <div class="flex-ledger-balance">FLEX-Kontostand: <span id="flex-ledger-balance-amount">€ 0,00</span></div>
+    <details>
+      <summary class="section-title">Kontobuchungen</summary>
+      <table class="ledger-table" id="ledger-table">
+        <thead>
+          <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+      <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    </details>
   </div>
 
   <div class="section" id="investments-section" style="display:none;">
@@ -94,11 +113,6 @@
     <div id="payout-request-message" class="pin-change-message"></div>
   </details>
 
-  <div class="section">
-    <div class="section-title">Verlauf</div>
-    <canvas id="history-chart" height="90"></canvas>
-  </div>
-
   <details class="section" id="calculator-details">
     <summary class="section-title">Zinseszinsrechner</summary>
     <form class="admin-form" id="calculator-form">
@@ -125,20 +139,6 @@
     <canvas id="calculator-chart" height="90"></canvas>
     <div class="projection-footnote" id="calculator-footnote"></div>
   </details>
-
-  <div class="section">
-    <div class="flex-ledger-balance">FLEX-Kontostand: <span id="flex-ledger-balance-amount">€ 0,00</span></div>
-    <details>
-      <summary class="section-title">Kontobuchungen</summary>
-      <table class="ledger-table" id="ledger-table">
-        <thead>
-          <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
-        </thead>
-        <tbody id="ledger-body"></tbody>
-      </table>
-      <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
-    </details>
-  </div>
 
   <details class="section">
     <summary class="section-title">PIN ändern</summary>
