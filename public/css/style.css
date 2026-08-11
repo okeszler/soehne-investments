@@ -499,6 +499,12 @@ canvas { max-width: 100%; }
   gap: 8px;
 }
 
+.calc-field-label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+
 .admin-form .full { grid-column: 1 / -1; }
 
 .admin-submit {
