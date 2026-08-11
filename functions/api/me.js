@@ -1,4 +1,4 @@
-import { requireSonSession, computeBalanceHistory, investmentSnapshot, json } from '../_shared.js';
+import { requireSonSession, computeBalanceHistory, computeFlexAccruedInterest, investmentSnapshot, json } from '../_shared.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await requireSonSession(request, env);
@@ -13,6 +13,8 @@ export async function onRequestGet({ request, env }) {
   ).bind(son.id).all();
 
   const { balance: cashBalance, history } = computeBalanceHistory(txs || []);
+
+  const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate);
 
   const { results: activeInvestments } = await env.DB.prepare(
     `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date, i.last_credit_date,
@@ -29,7 +31,7 @@ export async function onRequestGet({ request, env }) {
   const investmentsTotal = Math.round(
     investmentsWithSnapshot.reduce((sum, inv) => sum + inv.currentValue, 0) * 100
   ) / 100;
-  const balance = Math.round((cashBalance + investmentsTotal) * 100) / 100;
+  const balance = Math.round((cashBalance + flexAccruedInterest + investmentsTotal) * 100) / 100;
 
   const dailyInterest = Math.round((
     (cashBalance * son.annual_rate / 365) +
@@ -48,6 +50,7 @@ export async function onRequestGet({ request, env }) {
     annualRate: son.annual_rate,
     balance,
     cashBalance,
+    flexAccruedInterest,
     dailyInterest,
     history,
     transactions: txs,

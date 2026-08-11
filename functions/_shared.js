@@ -94,6 +94,23 @@ export function computeBalanceHistory(transactions) {
   return { balance: Math.round(running * 100) / 100, history };
 }
 
+// FLEX-Zinsen werden erst am Monatsletzten als Transaction gebucht (siehe Cron-Job).
+// Für den Kontostand rechnen wir die seither anteilig aufgelaufenen, noch nicht
+// gebuchten Zinsen trotzdem mit ein — unabhängig davon, dass sie erst am
+// Monatsende tatsächlich verfügbar werden.
+export function computeFlexAccruedInterest(transactions, cashBalance, annualRate) {
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+  const interestDates = (transactions || []).filter(t => t.type === 'interest').map(t => t.date);
+  const lastCreditDateStr = interestDates.length
+    ? interestDates.reduce((latest, d) => (d > latest ? d : latest))
+    : ((transactions && transactions[0]) ? transactions[0].date : today.toISOString().slice(0, 10));
+  const daysSinceCredit = Math.max(
+    0, Math.floor((today - new Date(lastCreditDateStr + 'T00:00:00Z')) / 86400000)
+  );
+  return Math.round((cashBalance * annualRate * daysSinceCredit / 365) * 100) / 100;
+}
+
 export const MIN_INVESTMENT_AMOUNT = 100;
 
 // Legt eine Investition an: prüft Produkt + FLEX-Guthaben, bucht eine Auszahlung auf

@@ -1,4 +1,4 @@
-import { requireAdminSession, computeBalanceHistory, investmentSnapshot, json } from '../../_shared.js';
+import { requireAdminSession, computeBalanceHistory, computeFlexAccruedInterest, investmentSnapshot, json } from '../../_shared.js';
 
 export async function onRequestGet({ request, env }) {
   const session = await requireAdminSession(request, env);
@@ -14,6 +14,7 @@ export async function onRequestGet({ request, env }) {
       'SELECT date, type, amount, note FROM transactions WHERE son_id = ? ORDER BY date ASC, id ASC'
     ).bind(son.id).all();
     const { balance: cashBalance } = computeBalanceHistory(txs || []);
+    const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate);
 
     const { results: activeInvestments } = await env.DB.prepare(
       `SELECT i.balance, i.last_credit_date, i.maturity_date, p.apy, p.interest_frequency
@@ -24,7 +25,7 @@ export async function onRequestGet({ request, env }) {
       (sum, inv) => sum + investmentSnapshot(inv).currentValue, 0
     );
 
-    const balance = Math.round((cashBalance + investmentsTotal) * 100) / 100;
+    const balance = Math.round((cashBalance + flexAccruedInterest + investmentsTotal) * 100) / 100;
     withBalances.push({ ...son, balance, cashBalance });
   }
 
