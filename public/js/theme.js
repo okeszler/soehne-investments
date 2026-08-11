@@ -8,7 +8,7 @@ function updateThemeToggleIcons() {
     btn.textContent = theme === 'light' ? '☀️' : '🌙';
   });
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', theme === 'light' ? '#F1F5F7' : '#2A3132');
+  if (meta) meta.setAttribute('content', theme === 'light' ? '#FAF3E3' : '#142E2A');
 }
 
 function toggleTheme() {
