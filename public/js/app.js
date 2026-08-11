@@ -343,6 +343,18 @@ document.getElementById('calculator-form').addEventListener('submit', (e) => {
   }
 });
 
+// Chart.js rendert in ein verstecktes <canvas> mit Breite 0, solange der
+// umgebende <details>-Block zugeklappt ist — beim Aufklappen neu zeichnen.
+document.getElementById('calculator-details').addEventListener('toggle', (e) => {
+  if (e.target.open && currentData) {
+    try {
+      renderCalculator();
+    } catch (err) {
+      console.error('Rechner konnte nicht aktualisiert werden:', err);
+    }
+  }
+});
+
 function renderLedger() {
   const body = document.getElementById('ledger-body');
   const empty = document.getElementById('ledger-empty');

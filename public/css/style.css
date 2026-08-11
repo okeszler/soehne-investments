@@ -387,6 +387,19 @@ input, select {
   opacity: 0.25;
 }
 
+summary.section-title {
+  cursor: pointer;
+  user-select: none;
+}
+
+summary.section-title::marker {
+  color: var(--muted);
+}
+
+details.section:not([open]) summary.section-title {
+  margin-bottom: 0;
+}
+
 canvas { max-width: 100%; }
 
 /* ---------- Projection controls ---------- */

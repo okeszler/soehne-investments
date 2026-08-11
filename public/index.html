@@ -84,23 +84,23 @@
     <div id="invest-message" class="pin-change-message"></div>
   </div>
 
-  <div class="section">
-    <div class="section-title">Auszahlung beantragen</div>
+  <details class="section">
+    <summary class="section-title">Auszahlung beantragen</summary>
     <form class="admin-form" id="payout-request-form">
       <input type="number" id="payout-amount" step="0.01" min="0.01" placeholder="Betrag in €" required>
       <input type="text" id="payout-note" placeholder="Notiz (optional)" maxlength="500">
       <button type="submit" class="admin-submit">Antrag senden</button>
     </form>
     <div id="payout-request-message" class="pin-change-message"></div>
-  </div>
+  </details>
 
   <div class="section">
     <div class="section-title">Verlauf</div>
     <canvas id="history-chart" height="90"></canvas>
   </div>
 
-  <div class="section">
-    <div class="section-title">Zinseszinsrechner</div>
+  <details class="section" id="calculator-details">
+    <summary class="section-title">Zinseszinsrechner</summary>
     <form class="admin-form" id="calculator-form">
       <input type="number" id="calc-capital" step="0.01" min="0" placeholder="Startkapital in €" value="1000" required>
       <div class="calc-duration">
@@ -124,7 +124,7 @@
     </form>
     <canvas id="calculator-chart" height="90"></canvas>
     <div class="projection-footnote" id="calculator-footnote"></div>
-  </div>
+  </details>
 
   <div class="section">
     <div class="section-title">FLEX-Bewegungen</div>
@@ -137,8 +137,8 @@
     <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
   </div>
 
-  <div class="section">
-    <div class="section-title">PIN ändern</div>
+  <details class="section">
+    <summary class="section-title">PIN ändern</summary>
     <form id="pin-change-form" class="pin-change-form">
       <input id="current-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Aktuelle PIN" autocomplete="off">
       <input id="new-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Neue PIN" autocomplete="off">
@@ -146,7 +146,7 @@
       <button type="submit" class="admin-submit">PIN ändern</button>
     </form>
     <div id="pin-change-message" class="pin-change-message"></div>
-  </div>
+  </details>
 </div>
 
 <script src="/js/theme.js"></script>
