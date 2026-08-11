@@ -160,6 +160,7 @@ function showDashboard() {
   animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
+  document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);

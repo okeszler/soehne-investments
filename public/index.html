@@ -127,14 +127,17 @@
   </details>
 
   <div class="section">
-    <div class="section-title">FLEX-Bewegungen</div>
-    <table class="ledger-table" id="ledger-table">
-      <thead>
-        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
-      </thead>
-      <tbody id="ledger-body"></tbody>
-    </table>
-    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    <div class="flex-ledger-balance">FLEX-Kontostand: <span id="flex-ledger-balance-amount">€ 0,00</span></div>
+    <details>
+      <summary class="section-title">Kontobuchungen</summary>
+      <table class="ledger-table" id="ledger-table">
+        <thead>
+          <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+        </thead>
+        <tbody id="ledger-body"></tbody>
+      </table>
+      <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    </details>
   </div>
 
   <details class="section">

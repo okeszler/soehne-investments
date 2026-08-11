@@ -396,8 +396,16 @@ summary.section-title::marker {
   color: var(--muted);
 }
 
-details.section:not([open]) summary.section-title {
+details:not([open]) > summary.section-title {
   margin-bottom: 0;
+}
+
+.flex-ledger-balance {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 16px;
 }
 
 canvas { max-width: 100%; }
