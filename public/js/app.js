@@ -134,11 +134,16 @@ function updateFlapCard(card, newChar) {
   card.appendChild(foldTop);
   card.appendChild(foldBottom);
 
-  foldBottom.addEventListener('animationend', () => {
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
     top.innerHTML = flapCharHtml(newChar);
     foldTop.remove();
     foldBottom.remove();
-  });
+  }
+  foldBottom.addEventListener('animationend', finish);
+  setTimeout(finish, 800); // Sicherheitsnetz falls die Animation aussetzt (z.B. Hintergrund-Tab)
 }
 
 function renderFlapBoard(container, text) {
