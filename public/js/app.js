@@ -257,21 +257,17 @@ const pct = v => `${(v * 100).toFixed(2).replace('.', ',')}%`;
 function renderKestExplainer() {
   const rate = currentData.annualRate;
   const kestRate = currentData.kestRate || 0;
+  const infoBtn = document.getElementById('kest-info-btn');
 
   if (kestRate > 0) {
+    infoBtn.style.display = 'none';
+    document.getElementById('kest-explainer').style.display = 'none';
     document.getElementById('kest-note-text').textContent =
       `Auf deine Zinsgutschriften wird die Kapitalertragssteuer (${pct(kestRate)}) abgezogen.`;
-    const netRate = rate * (1 - kestRate);
-    document.getElementById('kest-explainer').innerHTML =
-      `Von jeder Zinsgutschrift werden automatisch ${pct(kestRate)}
-      <strong>Kapitalertragssteuer (KESt)</strong> abgezogen, bevor sie deinem Kapital
-      gutgeschrieben wird — anders als bei Moritz und Florian, bei denen Papi die
-      Steuer übernimmt.<br><br>
-      Konkret: bei deinem FLEX-Zinssatz von ${pct(rate)} p.a. kommen nach Abzug effektiv
-      ${pct(netRate)} p.a. bei dir an.`;
     return;
   }
 
+  infoBtn.style.display = '';
   const netRate = rate * (1 - BANK_KEST_RATE);
   document.getElementById('kest-note-text').textContent =
     'Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit.';
