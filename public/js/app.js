@@ -225,6 +225,7 @@ function showDashboard() {
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
   renderFlapBoard(document.getElementById('balance-amount'), eur(currentData.balance));
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
+  document.getElementById('total-interest').textContent = eur(currentData.totalInterestEarned);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
   document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);
   renderKestExplainer();

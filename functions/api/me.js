@@ -51,6 +51,17 @@ export async function onRequestGet({ request, env }) {
     investmentsWithSnapshot.reduce((sum, inv) => sum + (inv.currentValue * inv.apy / 365), 0)
   ) * 100) / 100;
 
+  // Zinsen seit Start: nur tatsächlich gutgeschriebene Zinsen (FLEX-Zins-
+  // Transaktionen + der bereits verzinste Anteil jeder Investition laut
+  // `balance`), nicht der heute noch weiter auflaufende, noch nicht
+  // gebuchte Anteil (der steckt in `dailyInterest`/`flexAccruedInterest`).
+  const flexInterestPaid = (txs || [])
+    .filter(t => t.type === 'interest')
+    .reduce((sum, t) => sum + t.amount, 0);
+  const investmentInterestCredited = (allInvestments || [])
+    .reduce((sum, inv) => sum + (inv.balance - inv.principal), 0);
+  const totalInterestEarned = Math.round((flexInterestPaid + investmentInterestCredited) * 100) / 100;
+
   const { results: messages } = await env.DB.prepare(
     `SELECT id, body, created_at FROM messages
      WHERE (son_id = ? OR son_id IS NULL)
@@ -65,6 +76,7 @@ export async function onRequestGet({ request, env }) {
     cashBalance,
     flexAccruedInterest,
     dailyInterest,
+    totalInterestEarned,
     history: historyWithInvestments,
     transactions: txs,
     messages: (messages || []).map(m => ({ id: m.id, body: m.body, createdAt: m.created_at })),
