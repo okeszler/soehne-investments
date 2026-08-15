@@ -4,7 +4,7 @@ export async function onRequestGet({ request, env }) {
   const session = await requireSonSession(request, env);
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
-  const son = await env.DB.prepare('SELECT id, name, annual_rate FROM sons WHERE id = ?')
+  const son = await env.DB.prepare('SELECT id, name, annual_rate, kest_rate FROM sons WHERE id = ?')
     .bind(session.sonId).first();
   if (!son) return json({ error: 'Nicht gefunden' }, { status: 404 });
 
@@ -14,16 +14,17 @@ export async function onRequestGet({ request, env }) {
 
   const { balance: cashBalance, history } = computeBalanceHistory(txs || []);
 
-  const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate);
+  const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate, son.kest_rate);
 
-  const { results: allInvestments } = await env.DB.prepare(
+  const { results: rawInvestments } = await env.DB.prepare(
     `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date, i.last_credit_date, i.status,
             p.name as product_name, p.apy, p.lock_days, p.interest_frequency, p.description
      FROM investments i JOIN products p ON p.id = i.product_id
      WHERE i.son_id = ? ORDER BY i.maturity_date ASC`
   ).bind(son.id).all();
 
-  const activeInvestments = (allInvestments || []).filter(inv => inv.status === 'active');
+  const allInvestments = (rawInvestments || []).map(inv => ({ ...inv, kest_rate: son.kest_rate }));
+  const activeInvestments = allInvestments.filter(inv => inv.status === 'active');
   const investmentsWithSnapshot = activeInvestments.map(inv => ({
     ...inv,
     ...investmentSnapshot(inv)
@@ -47,8 +48,8 @@ export async function onRequestGet({ request, env }) {
   });
 
   const dailyInterest = Math.round((
-    (cashBalance * son.annual_rate / 365) +
-    investmentsWithSnapshot.reduce((sum, inv) => sum + (inv.currentValue * inv.apy / 365), 0)
+    (cashBalance * son.annual_rate / 365 * (1 - son.kest_rate)) +
+    investmentsWithSnapshot.reduce((sum, inv) => sum + (inv.currentValue * inv.apy / 365 * (1 - son.kest_rate)), 0)
   ) * 100) / 100;
 
   // Zinsen seit Start: nur tatsächlich gutgeschriebene Zinsen (FLEX-Zins-
@@ -72,6 +73,7 @@ export async function onRequestGet({ request, env }) {
   return json({
     name: son.name,
     annualRate: son.annual_rate,
+    kestRate: son.kest_rate,
     balance,
     cashBalance,
     flexAccruedInterest,

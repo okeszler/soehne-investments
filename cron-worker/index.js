@@ -27,8 +27,10 @@ async function runInvestments(env) {
 
   const { results: investments } = await env.DB.prepare(
     `SELECT i.id, i.son_id, i.balance, i.maturity_date, i.last_credit_date,
-            p.name as product_name, p.apy, p.interest_frequency
-     FROM investments i JOIN products p ON p.id = i.product_id
+            p.name as product_name, p.apy, p.interest_frequency, s.kest_rate
+     FROM investments i
+     JOIN products p ON p.id = i.product_id
+     JOIN sons s ON s.id = i.son_id
      WHERE i.status = 'active'`
   ).all();
 
@@ -37,7 +39,8 @@ async function runInvestments(env) {
     let balance = inv.balance;
     if (elapsedDays > 0) {
       const interest = Math.round((inv.balance * inv.apy * elapsedDays / 365) * 100) / 100;
-      balance = Math.round((inv.balance + interest) * 100) / 100;
+      const netInterest = Math.round((interest * (1 - inv.kest_rate)) * 100) / 100;
+      balance = Math.round((inv.balance + netInterest) * 100) / 100;
     }
 
     if (todayStr >= inv.maturity_date) {
@@ -70,7 +73,7 @@ async function runMonthlyInterest(env) {
 
   const dateStr = today.toISOString().slice(0, 10);
 
-  const { results: sons } = await env.DB.prepare('SELECT id, annual_rate FROM sons').all();
+  const { results: sons } = await env.DB.prepare('SELECT id, annual_rate, kest_rate FROM sons').all();
 
   for (const son of sons) {
     const existing = await env.DB.prepare(
@@ -85,7 +88,8 @@ async function runMonthlyInterest(env) {
     let balance = 0;
     for (const tx of txs || []) balance += tx.type === 'withdrawal' ? -tx.amount : tx.amount;
 
-    const interest = Math.round((balance * son.annual_rate / 12) * 100) / 100;
+    const grossInterest = balance * son.annual_rate / 12;
+    const interest = Math.round((grossInterest * (1 - son.kest_rate)) * 100) / 100;
     if (interest <= 0) continue;
 
     await env.DB.prepare(

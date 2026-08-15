@@ -98,7 +98,7 @@ export function computeBalanceHistory(transactions) {
 // Für den Kontostand rechnen wir die seither anteilig aufgelaufenen, noch nicht
 // gebuchten Zinsen trotzdem mit ein — unabhängig davon, dass sie erst am
 // Monatsende tatsächlich verfügbar werden.
-export function computeFlexAccruedInterest(transactions, cashBalance, annualRate) {
+export function computeFlexAccruedInterest(transactions, cashBalance, annualRate, kestRate = 0) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const interestDates = (transactions || []).filter(t => t.type === 'interest').map(t => t.date);
@@ -108,7 +108,8 @@ export function computeFlexAccruedInterest(transactions, cashBalance, annualRate
   const daysSinceCredit = Math.max(
     0, Math.floor((today - new Date(lastCreditDateStr + 'T00:00:00Z')) / 86400000)
   );
-  return Math.round((cashBalance * annualRate * daysSinceCredit / 365) * 100) / 100;
+  const gross = cashBalance * annualRate * daysSinceCredit / 365;
+  return Math.round((gross * (1 - kestRate)) * 100) / 100;
 }
 
 // Schickt eine einfache Text-E-Mail über die Resend API. Wirft nicht bei
@@ -183,25 +184,27 @@ const PERIOD_DAYS = { monthly: 30, quarterly: 91, yearly: 365, maturity: Infinit
 // Compoundet `principal` periodenweise (gemäß frequency) von `fromDate` bis
 // `toDate`, identisch zur Cron-Logik. Gemeinsame Basis für investmentSnapshot()
 // (Endwert bei Fälligkeit) und investmentValueAtDate() (historischer Wert für
-// den Verlaufs-Graph).
-function compoundValue(principal, apy, frequency, fromDate, toDate) {
+// den Verlaufs-Graph). `kestRate` zieht bei jeder Periode direkt den
+// entsprechenden Anteil der Zinsen ab, bevor sie dem Kapital zugeschlagen
+// werden (wirkt sich dadurch auch auf den Zinseszins-Effekt aus).
+function compoundValue(principal, apy, frequency, fromDate, toDate, kestRate = 0) {
   if (toDate <= fromDate) return Math.round(principal * 100) / 100;
   const periodDays = PERIOD_DAYS[frequency] || 30;
   let value = principal;
   let cursor = fromDate;
   if (periodDays === Infinity) {
     const days = Math.max(0, Math.round((toDate - cursor) / 86400000));
-    value += value * apy * days / 365;
+    value += value * apy * days / 365 * (1 - kestRate);
   } else {
     while (true) {
       const next = new Date(cursor);
       next.setUTCDate(next.getUTCDate() + periodDays);
       if (next >= toDate) {
         const days = Math.max(0, Math.round((toDate - cursor) / 86400000));
-        value += value * apy * days / 365;
+        value += value * apy * days / 365 * (1 - kestRate);
         break;
       }
-      value += value * apy * periodDays / 365;
+      value += value * apy * periodDays / 365 * (1 - kestRate);
       cursor = next;
     }
   }
@@ -211,18 +214,23 @@ function compoundValue(principal, apy, frequency, fromDate, toDate) {
 // Momentaufnahme einer Investition: aktueller Wert (Kapital + bis heute anteilig
 // aufgelaufene Zinsen), voraussichtlicher Endwert bei Fälligkeit (simuliert dieselbe
 // Perioden-Logik wie der Cron-Job, ohne etwas zu buchen) und verbleibende Tage.
+// `inv.kest_rate` ist der Steuersatz des Sohns (0 für Moritz/Florian, 0.25 für
+// Andreea) — wird auf jede Zinsgutschrift angewendet, nicht nur am Ende.
 export function investmentSnapshot(inv) {
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
   const lastCredit = new Date(inv.last_credit_date + 'T00:00:00Z');
   const maturity = new Date(inv.maturity_date + 'T00:00:00Z');
+  const kestRate = inv.kest_rate || 0;
 
   const elapsedDays = Math.max(0, Math.floor((today - lastCredit) / 86400000));
-  const currentValue = Math.round((inv.balance + inv.balance * inv.apy * elapsedDays / 365) * 100) / 100;
+  const currentValue = Math.round(
+    (inv.balance + inv.balance * inv.apy * elapsedDays / 365 * (1 - kestRate)) * 100
+  ) / 100;
 
   const daysRemaining = Math.max(0, Math.ceil((maturity - today) / 86400000));
 
-  const maturityValue = compoundValue(inv.balance, inv.apy, inv.interest_frequency, lastCredit, maturity);
+  const maturityValue = compoundValue(inv.balance, inv.apy, inv.interest_frequency, lastCredit, maturity, kestRate);
 
   return { currentValue, maturityValue, daysRemaining };
 }
@@ -237,7 +245,7 @@ export function investmentValueAtDate(inv, asOfDate) {
   const start = new Date(inv.start_date + 'T00:00:00Z');
   const maturity = new Date(inv.maturity_date + 'T00:00:00Z');
   if (asOfDate < start || asOfDate >= maturity) return 0;
-  return compoundValue(inv.principal, inv.apy, inv.interest_frequency, start, asOfDate);
+  return compoundValue(inv.principal, inv.apy, inv.interest_frequency, start, asOfDate, inv.kest_rate || 0);
 }
 
 // Schickt eine Push-Benachrichtigung an alle Geräte eines oder mehrerer Söhne.

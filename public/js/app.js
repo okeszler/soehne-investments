@@ -248,12 +248,30 @@ function showDashboard() {
   }
 }
 
-const KEST_RATE = 0.275;
+const BANK_KEST_RATE = 0.275;
 const pct = v => `${(v * 100).toFixed(2).replace('.', ',')}%`;
 
 function renderKestExplainer() {
   const rate = currentData.annualRate;
-  const netRate = rate * (1 - KEST_RATE);
+  const kestRate = currentData.kestRate || 0;
+
+  if (kestRate > 0) {
+    document.getElementById('kest-note-text').textContent =
+      `Auf deine Zinsgutschriften wird die Kapitalertragssteuer (${pct(kestRate)}) abgezogen.`;
+    const netRate = rate * (1 - kestRate);
+    document.getElementById('kest-explainer').innerHTML =
+      `Von jeder Zinsgutschrift werden automatisch ${pct(kestRate)}
+      <strong>Kapitalertragssteuer (KESt)</strong> abgezogen, bevor sie deinem Kapital
+      gutgeschrieben wird — anders als bei Moritz und Florian, bei denen Papi die
+      Steuer übernimmt.<br><br>
+      Konkret: bei deinem FLEX-Zinssatz von ${pct(rate)} p.a. kommen nach Abzug effektiv
+      ${pct(netRate)} p.a. bei dir an.`;
+    return;
+  }
+
+  const netRate = rate * (1 - BANK_KEST_RATE);
+  document.getElementById('kest-note-text').textContent =
+    'Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit.';
   document.getElementById('kest-explainer').innerHTML =
     `Normale Banken behalten in Österreich automatisch 27,5% deiner Zinsgewinne als
     <strong>Kapitalertragssteuer (KESt)</strong> ein, bevor du sie siehst. Papi übernimmt

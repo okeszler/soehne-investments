@@ -5,7 +5,7 @@ export async function onRequestGet({ request, env }) {
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
   const { results: sons } = await env.DB.prepare(
-    'SELECT id, name, annual_rate FROM sons ORDER BY name'
+    'SELECT id, name, annual_rate, kest_rate FROM sons ORDER BY name'
   ).all();
 
   const withBalances = [];
@@ -14,7 +14,7 @@ export async function onRequestGet({ request, env }) {
       'SELECT date, type, amount, note FROM transactions WHERE son_id = ? ORDER BY date ASC, id ASC'
     ).bind(son.id).all();
     const { balance: cashBalance } = computeBalanceHistory(txs || []);
-    const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate);
+    const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate, son.kest_rate);
 
     const { results: activeInvestments } = await env.DB.prepare(
       `SELECT i.balance, i.last_credit_date, i.maturity_date, p.apy, p.interest_frequency
@@ -22,7 +22,7 @@ export async function onRequestGet({ request, env }) {
        WHERE i.son_id = ? AND i.status = 'active'`
     ).bind(son.id).all();
     const investmentsTotal = (activeInvestments || []).reduce(
-      (sum, inv) => sum + investmentSnapshot(inv).currentValue, 0
+      (sum, inv) => sum + investmentSnapshot({ ...inv, kest_rate: son.kest_rate }).currentValue, 0
     );
 
     const balance = Math.round((cashBalance + flexAccruedInterest + investmentsTotal) * 100) / 100;
