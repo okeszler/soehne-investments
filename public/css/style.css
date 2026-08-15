@@ -425,28 +425,10 @@ input, select {
   z-index: 2;
 }
 
-/* Leichtes Überschwingen beim Einrasten statt eines glatten Stopps — das
-   mechanische "Clack" einer echten Split-Flap-Anzeige. */
 .flap-flip-bottom {
   transform-origin: top;
   transform: rotateX(90deg);
-  animation: flapFoldUpBounce 0.36s cubic-bezier(.34, 1.56, .64, 1) 0.32s forwards;
-  z-index: 2;
-}
-
-/* Schnelle Zwischenschritte beim Durchspinnen einer Ziffer (z.B. 3 → 7 läuft
-   über 4, 5, 6) — kein Überschwingen, nur der reine Klapp-Effekt, schnell
-   genug um wie ein mechanisches Rattern zu wirken statt einzeln abzuwarten. */
-.flap-flip-top-fast {
-  transform-origin: bottom;
-  animation: flapFoldDown 0.06s linear forwards;
-  z-index: 2;
-}
-
-.flap-flip-bottom-fast {
-  transform-origin: top;
-  transform: rotateX(90deg);
-  animation: flapFoldUp 0.06s linear 0.06s forwards;
+  animation: flapFoldUp 0.32s ease-out 0.32s forwards;
   z-index: 2;
 }
 
@@ -458,23 +440,6 @@ input, select {
 @keyframes flapFoldUp {
   from { transform: rotateX(90deg); }
   to   { transform: rotateX(0deg); }
-}
-
-@keyframes flapFoldUpBounce {
-  0%   { transform: rotateX(90deg); }
-  70%  { transform: rotateX(-8deg); }
-  100% { transform: rotateX(0deg); }
-}
-
-/* Pulsierender Schatten während eine Karte durch mehrere Ziffern spinnt —
-   verstärkt den Eindruck von mechanischem Rattern. */
-.flap-card.flipping {
-  animation: flapShadowPulse 0.5s ease-in-out infinite;
-}
-
-@keyframes flapShadowPulse {
-  0%, 100% { box-shadow: 0 2px 5px rgba(0,0,0,0.35); }
-  50%      { box-shadow: 0 2px 5px rgba(0,0,0,0.35), inset 0 0 10px rgba(0,0,0,0.55); }
 }
 
 .stamp-tax-note {
