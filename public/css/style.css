@@ -342,10 +342,10 @@ input, select {
 /* ---------- Split-Flap-Anzeige (Lost-Style-Zähler) ---------- */
 
 .stamp-balance.flap-board {
-  --flap-w: 39px;
-  --flap-h: 57px;
+  --flap-w: 36px;
+  --flap-h: 53px;
   --flap-gap: 4px;
-  --flap-font: 34px;
+  --flap-font: 31px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -366,6 +366,8 @@ input, select {
   border-radius: 4px;
   box-shadow: 0 2px 5px rgba(0,0,0,0.35);
 }
+
+.flap-card.flap-narrow { width: calc(var(--flap-w) * 0.42); }
 
 .flap-half,
 .flap-flip {
@@ -731,10 +733,10 @@ canvas { max-width: 100%; }
 @media (max-width: 480px) {
   .stamp-balance { font-size: 42px; }
   .stamp-balance.flap-board {
-    --flap-w: 29px;
-    --flap-h: 44px;
-    --flap-gap: 3px;
-    --flap-font: 25px;
+    --flap-w: 26px;
+    --flap-h: 41px;
+    --flap-gap: 2px;
+    --flap-font: 23px;
   }
   .admin-form { grid-template-columns: 1fr; }
 }

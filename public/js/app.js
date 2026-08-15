@@ -98,9 +98,11 @@ function flapCharHtml(char) {
   return `<span class="flap-char">${safe}</span>`;
 }
 
+const isNarrowFlapChar = ch => ch === '.' || ch === ',';
+
 function createFlapCard(char) {
   const card = document.createElement('div');
-  card.className = 'flap-card';
+  card.className = isNarrowFlapChar(char) ? 'flap-card flap-narrow' : 'flap-card';
   card.dataset.char = char;
   card.innerHTML =
     `<div class="flap-half flap-top">${flapCharHtml(char)}</div>` +
@@ -111,6 +113,7 @@ function createFlapCard(char) {
 function updateFlapCard(card, newChar) {
   if (card.dataset.char === newChar) return;
   card.dataset.char = newChar;
+  card.classList.toggle('flap-narrow', isNarrowFlapChar(newChar));
 
   const top = card.querySelector('.flap-top');
   const bottom = card.querySelector('.flap-bottom');
