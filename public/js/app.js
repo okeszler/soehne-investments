@@ -110,27 +110,23 @@ function createFlapCard(char) {
   return card;
 }
 
-function updateFlapCard(card, newChar) {
-  if (card.dataset.char === newChar) return;
-  card.dataset.char = newChar;
-  card.classList.toggle('flap-narrow', isNarrowFlapChar(newChar));
+const isDigit = ch => ch >= '0' && ch <= '9';
+const nextDigit = ch => String((parseInt(ch, 10) + 1) % 10);
 
-  const top = card.querySelector('.flap-top');
-  const bottom = card.querySelector('.flap-bottom');
+// Führt einen einzelnen Klapp-Schritt aus (oldChar -> newChar) und ruft
+// onDone() nach Abschluss (inkl. Aufräumen der temporären Flip-Layer) auf.
+// `fast` = kurzer Zwischenschritt beim Durchspinnen einer Ziffer, ohne
+// Überschwingen; sonst der "richtige" Flip mit mechanischem Bounce beim
+// Einrasten (siehe .flap-flip-bottom in style.css).
+function flapFlipStep(card, top, bottom, oldChar, newChar, fast, onDone) {
   card.querySelectorAll('.flap-flip').forEach(n => n.remove());
 
-  if (prefersReducedMotion) {
-    top.innerHTML = flapCharHtml(newChar);
-    bottom.innerHTML = flapCharHtml(newChar);
-    return;
-  }
-
   const foldTop = document.createElement('div');
-  foldTop.className = 'flap-flip flap-flip-top';
-  foldTop.innerHTML = top.innerHTML;
+  foldTop.className = 'flap-flip ' + (fast ? 'flap-flip-top-fast' : 'flap-flip-top');
+  foldTop.innerHTML = flapCharHtml(oldChar);
 
   const foldBottom = document.createElement('div');
-  foldBottom.className = 'flap-flip flap-flip-bottom';
+  foldBottom.className = 'flap-flip ' + (fast ? 'flap-flip-bottom-fast' : 'flap-flip-bottom');
   foldBottom.innerHTML = flapCharHtml(newChar);
 
   bottom.innerHTML = flapCharHtml(newChar);
@@ -144,9 +140,56 @@ function updateFlapCard(card, newChar) {
     top.innerHTML = flapCharHtml(newChar);
     foldTop.remove();
     foldBottom.remove();
+    onDone();
   }
   foldBottom.addEventListener('animationend', finish);
-  setTimeout(finish, 800); // Sicherheitsnetz falls die Animation aussetzt (z.B. Hintergrund-Tab)
+  setTimeout(finish, fast ? 200 : 800); // Sicherheitsnetz falls die Animation aussetzt (z.B. Hintergrund-Tab)
+}
+
+function updateFlapCard(card, newChar) {
+  const oldChar = card.dataset.char;
+  if (oldChar === newChar) return;
+  card.dataset.char = newChar;
+  card.classList.toggle('flap-narrow', isNarrowFlapChar(newChar));
+
+  const top = card.querySelector('.flap-top');
+  const bottom = card.querySelector('.flap-bottom');
+
+  if (prefersReducedMotion) {
+    card.querySelectorAll('.flap-flip').forEach(n => n.remove());
+    top.innerHTML = flapCharHtml(newChar);
+    bottom.innerHTML = flapCharHtml(newChar);
+    return;
+  }
+
+  // Ziffern spinnen vorwärts durch alle Zwischenwerte (0-9, mit Wraparound),
+  // genau wie bei einer echten Split-Flap-Anzeige, die sich nur in eine
+  // Richtung dreht. Alles andere (€, Trennzeichen) macht einen einzelnen Flip.
+  const steps = [];
+  if (isDigit(oldChar) && isDigit(newChar)) {
+    let cur = oldChar;
+    while (cur !== newChar) {
+      cur = nextDigit(cur);
+      steps.push(cur);
+    }
+  } else {
+    steps.push(newChar);
+  }
+
+  card.classList.add('flipping');
+  let cur = oldChar;
+  let i = 0;
+  function runStep() {
+    const stepChar = steps[i];
+    const isLast = i === steps.length - 1;
+    flapFlipStep(card, top, bottom, cur, stepChar, !isLast, () => {
+      cur = stepChar;
+      i++;
+      if (i < steps.length) runStep();
+      else card.classList.remove('flipping');
+    });
+  }
+  runStep();
 }
 
 function renderFlapBoard(container, text) {
