@@ -89,29 +89,76 @@ async function setupPush() {
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const chartAnimation = prefersReducedMotion ? false : { duration: 700, easing: 'easeOutQuart' };
 
-function animateNumber(el, to, formatFn) {
+// Split-Flap-Anzeige (Solari-Board-Style, wie der Hatch-Zähler in "Lost"):
+// ein <div class="flap-card"> pro Zeichen mit oberer/unterer Hälfte; bei
+// einer Wertänderung werden zwei kurzlebige "Flip"-Halbkarten eingeblendet,
+// die die alte obere Hälfte wegklappen und die neue untere Hälfte reinklappen.
+function flapCharHtml(char) {
+  const safe = /\s/.test(char) ? '&nbsp;' : escapeHtml(char);
+  return `<span class="flap-char">${safe}</span>`;
+}
+
+function createFlapCard(char) {
+  const card = document.createElement('div');
+  card.className = 'flap-card';
+  card.dataset.char = char;
+  card.innerHTML =
+    `<div class="flap-half flap-top">${flapCharHtml(char)}</div>` +
+    `<div class="flap-half flap-bottom">${flapCharHtml(char)}</div>`;
+  return card;
+}
+
+function updateFlapCard(card, newChar) {
+  if (card.dataset.char === newChar) return;
+  card.dataset.char = newChar;
+
+  const top = card.querySelector('.flap-top');
+  const bottom = card.querySelector('.flap-bottom');
+  card.querySelectorAll('.flap-flip').forEach(n => n.remove());
+
   if (prefersReducedMotion) {
-    el.textContent = formatFn(to);
+    top.innerHTML = flapCharHtml(newChar);
+    bottom.innerHTML = flapCharHtml(newChar);
     return;
   }
-  const duration = 600;
-  const start = performance.now();
-  let done = false;
-  function finish() {
-    if (done) return;
-    done = true;
-    el.textContent = formatFn(to);
+
+  const foldTop = document.createElement('div');
+  foldTop.className = 'flap-flip flap-flip-top';
+  foldTop.innerHTML = top.innerHTML;
+
+  const foldBottom = document.createElement('div');
+  foldBottom.className = 'flap-flip flap-flip-bottom';
+  foldBottom.innerHTML = flapCharHtml(newChar);
+
+  bottom.innerHTML = flapCharHtml(newChar);
+  card.appendChild(foldTop);
+  card.appendChild(foldBottom);
+
+  foldBottom.addEventListener('animationend', () => {
+    top.innerHTML = flapCharHtml(newChar);
+    foldTop.remove();
+    foldBottom.remove();
+  });
+}
+
+function renderFlapBoard(container, text) {
+  const chars = [...text];
+  const existing = [...container.children];
+
+  if (existing.length !== chars.length) {
+    container.innerHTML = '';
+    chars.forEach(ch => {
+      const el = /\s/.test(ch) ? document.createElement('div') : createFlapCard(ch);
+      if (/\s/.test(ch)) el.className = 'flap-space';
+      container.appendChild(el);
+    });
+    return;
   }
-  function tick(now) {
-    if (done) return;
-    const t = Math.min(1, (now - start) / duration);
-    const eased = 1 - Math.pow(1 - t, 3);
-    el.textContent = formatFn(to * eased);
-    if (t < 1) requestAnimationFrame(tick);
-    else finish();
-  }
-  requestAnimationFrame(tick);
-  setTimeout(finish, duration + 150); // Sicherheitsnetz falls rAF ausgesetzt wird (z.B. Hintergrund-Tab)
+
+  chars.forEach((ch, i) => {
+    const el = existing[i];
+    if (el.classList.contains('flap-card')) updateFlapCard(el, ch);
+  });
 }
 
 async function checkSession() {
@@ -157,7 +204,7 @@ function showDashboard() {
 
   document.getElementById('greeting').textContent = `Hallo ${currentData.name}`;
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
-  animateNumber(document.getElementById('balance-amount'), currentData.balance, eur);
+  renderFlapBoard(document.getElementById('balance-amount'), eur(currentData.balance));
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
   document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);

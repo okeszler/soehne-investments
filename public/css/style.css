@@ -339,6 +339,107 @@ input, select {
   display: inline-block;
 }
 
+/* ---------- Split-Flap-Anzeige (Lost-Style-Zähler) ---------- */
+
+.stamp-balance.flap-board {
+  --flap-w: 30px;
+  --flap-h: 44px;
+  --flap-gap: 3px;
+  --flap-font: 26px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--flap-gap);
+  font-family: var(--font-mono);
+}
+
+.flap-space { flex: 0 0 auto; width: calc(var(--flap-w) * 0.45); }
+
+.flap-card {
+  position: relative;
+  flex: 0 0 auto;
+  width: var(--flap-w);
+  height: var(--flap-h);
+  font-size: var(--flap-font);
+  font-weight: 600;
+  perspective: 220px;
+  border-radius: 4px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+}
+
+.flap-half,
+.flap-flip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 50%;
+  overflow: hidden;
+  background: #17181a;
+  color: #f2f2f2;
+  box-sizing: border-box;
+}
+
+.flap-half .flap-char,
+.flap-flip .flap-char {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: var(--flap-h);
+  line-height: var(--flap-h);
+  text-align: center;
+}
+
+.flap-top,
+.flap-flip-top {
+  top: 0;
+  border-radius: 4px 4px 0 0;
+}
+
+.flap-bottom,
+.flap-flip-bottom {
+  bottom: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.flap-bottom .flap-char,
+.flap-flip-bottom .flap-char {
+  top: calc(var(--flap-h) / -2);
+}
+
+.flap-half::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgba(0,0,0,0.6);
+}
+
+.flap-flip-top {
+  transform-origin: bottom;
+  animation: flapFoldDown 0.32s ease-in forwards;
+  z-index: 2;
+}
+
+.flap-flip-bottom {
+  transform-origin: top;
+  transform: rotateX(90deg);
+  animation: flapFoldUp 0.32s ease-out 0.32s forwards;
+  z-index: 2;
+}
+
+@keyframes flapFoldDown {
+  from { transform: rotateX(0deg); }
+  to   { transform: rotateX(-90deg); }
+}
+
+@keyframes flapFoldUp {
+  from { transform: rotateX(90deg); }
+  to   { transform: rotateX(0deg); }
+}
+
 .stamp-tax-note {
   font-family: var(--font-mono);
   font-size: 11px;
@@ -629,5 +730,11 @@ canvas { max-width: 100%; }
 
 @media (max-width: 480px) {
   .stamp-balance { font-size: 42px; }
+  .stamp-balance.flap-board {
+    --flap-w: 22px;
+    --flap-h: 34px;
+    --flap-gap: 2px;
+    --flap-font: 19px;
+  }
   .admin-form { grid-template-columns: 1fr; }
 }
