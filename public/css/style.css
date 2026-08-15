@@ -342,10 +342,10 @@ input, select {
 /* ---------- Split-Flap-Anzeige (Lost-Style-Zähler) ---------- */
 
 .stamp-balance.flap-board {
-  --flap-w: 30px;
-  --flap-h: 44px;
-  --flap-gap: 3px;
-  --flap-font: 26px;
+  --flap-w: 39px;
+  --flap-h: 57px;
+  --flap-gap: 4px;
+  --flap-font: 34px;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -731,10 +731,10 @@ canvas { max-width: 100%; }
 @media (max-width: 480px) {
   .stamp-balance { font-size: 42px; }
   .stamp-balance.flap-board {
-    --flap-w: 22px;
-    --flap-h: 34px;
-    --flap-gap: 2px;
-    --flap-font: 19px;
+    --flap-w: 29px;
+    --flap-h: 44px;
+    --flap-gap: 3px;
+    --flap-font: 25px;
   }
   .admin-form { grid-template-columns: 1fr; }
 }
