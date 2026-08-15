@@ -152,10 +152,24 @@ function renderFlapBoard(container, text) {
 
   if (existing.length !== chars.length) {
     container.innerHTML = '';
-    chars.forEach(ch => {
-      const el = /\s/.test(ch) ? document.createElement('div') : createFlapCard(ch);
-      if (/\s/.test(ch)) el.className = 'flap-space';
+    const cards = chars.map(ch => {
+      const isSpace = /\s/.test(ch);
+      const el = isSpace ? document.createElement('div') : createFlapCard(' ');
+      if (isSpace) el.className = 'flap-space';
       container.appendChild(el);
+      return { el, ch, isSpace };
+    });
+
+    // Beim (erneuten) Aufbau starten alle Karten blank und rasten dann von
+    // links nach rechts nacheinander auf ihren Wert ein, statt sofort fertig
+    // dazustehen — so sieht man den Flip-Effekt auch beim Laden/Neuladen.
+    cards.forEach(({ el, ch, isSpace }, i) => {
+      if (isSpace) return;
+      if (prefersReducedMotion) {
+        updateFlapCard(el, ch);
+      } else {
+        setTimeout(() => updateFlapCard(el, ch), i * 70);
+      }
     });
     return;
   }
