@@ -1,11 +1,14 @@
-// Drei Cron-Trigger (siehe wrangler.toml): Zinsgutschrift an den möglichen Monatsletzten,
-// automatische Buchungen (z.B. Taschengeld) am 1. jeden Monats, Investitionen täglich.
+// Vier Cron-Trigger (siehe wrangler.toml): Zinsgutschrift an den möglichen Monatsletzten,
+// automatische Buchungen (z.B. Taschengeld) am 1. jeden Monats, Investitionen täglich,
+// Kontoauszug-Mail am 1. jeden Monats.
 export default {
   async scheduled(event, env, ctx) {
     if (event.cron === '0 6 1 * *') {
       await runRecurringBookings(env);
     } else if (event.cron === '0 22 * * *') {
       await runInvestments(env);
+    } else if (event.cron === '0 7 1 * *') {
+      await runMonthlyStatementEmails(env);
     } else {
       await runMonthlyInterest(env);
     }
@@ -116,5 +119,95 @@ async function runRecurringBookings(env) {
     await env.DB.prepare(
       'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
     ).bind(booking.son_id, dateStr, booking.type, booking.amount, booking.note).run();
+  }
+}
+
+const eur = n => `${n.toFixed(2).replace('.', ',')} €`;
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+const monthNames = [
+  'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
+  'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
+];
+
+async function sendEmail(env, { to, cc, subject, text }) {
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Söhne-Investment <onboarding@resend.dev>',
+        to: [to],
+        cc: cc || [],
+        subject,
+        text
+      })
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// Läuft am 1. jeden Monats: schickt jeder Person mit hinterlegter E-Mail-Adresse
+// einen Kontoauszug der FLEX-Bewegungen des VERGANGENEN Monats (Kopie an Papi).
+async function runMonthlyStatementEmails(env) {
+  const now = new Date();
+  const firstOfThisMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const lastMonthEnd = new Date(firstOfThisMonth);
+  lastMonthEnd.setUTCDate(lastMonthEnd.getUTCDate() - 1);
+  const firstOfLastMonth = new Date(Date.UTC(lastMonthEnd.getUTCFullYear(), lastMonthEnd.getUTCMonth(), 1));
+
+  const rangeStart = firstOfLastMonth.toISOString().slice(0, 10);
+  const rangeEnd = lastMonthEnd.toISOString().slice(0, 10);
+  const monthLabel = `${monthNames[firstOfLastMonth.getUTCMonth()]} ${firstOfLastMonth.getUTCFullYear()}`;
+
+  const { results: sons } = await env.DB.prepare(
+    "SELECT id, name, email FROM sons WHERE email IS NOT NULL AND email != ''"
+  ).all();
+
+  for (const son of sons || []) {
+    const { results: txs } = await env.DB.prepare(
+      'SELECT date, type, amount, note FROM transactions WHERE son_id = ? ORDER BY date ASC, id ASC'
+    ).bind(son.id).all();
+
+    let startBalance = 0;
+    const monthTxs = [];
+    for (const tx of txs || []) {
+      const signed = tx.type === 'withdrawal' ? -tx.amount : tx.amount;
+      if (tx.date < rangeStart) {
+        startBalance += signed;
+      } else if (tx.date <= rangeEnd) {
+        monthTxs.push(tx);
+      }
+    }
+    const endBalance = monthTxs.reduce(
+      (sum, tx) => sum + (tx.type === 'withdrawal' ? -tx.amount : tx.amount), startBalance
+    );
+
+    const lines = monthTxs.length
+      ? monthTxs.map(tx => {
+          const sign = tx.type === 'withdrawal' ? '-' : '+';
+          const label = typeLabels[tx.type] || tx.type;
+          const note = tx.note ? ` (${tx.note})` : '';
+          return `${tx.date}  ${label}${note}: ${sign}${eur(tx.amount)}`;
+        }).join('\n')
+      : '(keine Bewegungen)';
+
+    const text =
+      `Kontoauszug FLEX-Konto für ${son.name} — ${monthLabel}\n\n` +
+      `Kontostand am ${rangeStart}: ${eur(Math.round(startBalance * 100) / 100)}\n\n` +
+      `Bewegungen:\n${lines}\n\n` +
+      `Kontostand am ${rangeEnd}: ${eur(Math.round(endBalance * 100) / 100)}\n\n` +
+      `(Gebundene Investitionen sind in diesem Auszug nicht enthalten.)`;
+
+    await sendEmail(env, {
+      to: son.email,
+      cc: ['okeszler@gmail.com'],
+      subject: `Kontoauszug ${monthLabel} — ${son.name}`,
+      text
+    });
   }
 }
