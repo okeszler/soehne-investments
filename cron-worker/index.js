@@ -128,7 +128,73 @@ const monthNames = [
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
 ];
 
-async function sendEmail(env, { to, cc, subject, text }) {
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+const dateFmtDE = isoDate => {
+  const [y, m, d] = isoDate.split('-');
+  return `${d}.${m}.${y}`;
+};
+
+// Farben/Optik an public/css/style.css angelehnt (Sandstone/Sea-Palette,
+// "Stamp Card"-Look), inline gestylt weil E-Mail-Clients kein <style>/CSS-
+// Variablen/Custom-Fonts zuverlässig unterstützen.
+const EMAIL_COLORS = {
+  bg: '#FAF3E3', paper: '#FFFFFF', ink: '#142E2A', sea: '#20948B', rust: '#DE7A22'
+};
+
+function buildStatementHtml({ sonName, monthLabel, rangeStart, rangeEnd, startBalance, endBalance, monthTxs }) {
+  const c = EMAIL_COLORS;
+  const rows = monthTxs.length
+    ? monthTxs.map(tx => {
+        const isWithdrawal = tx.type === 'withdrawal';
+        const color = isWithdrawal ? c.rust : c.sea;
+        const sign = isWithdrawal ? '−' : '+';
+        const label = typeLabels[tx.type] || tx.type;
+        const note = tx.note ? ` <span style="color:${c.ink};opacity:0.6;">(${escapeHtml(tx.note)})</span>` : '';
+        return `<tr>
+          <td style="padding:8px 0;border-bottom:1px dashed rgba(20,46,42,0.15);font-size:13px;color:${c.ink};">${dateFmtDE(tx.date)}</td>
+          <td style="padding:8px 0;border-bottom:1px dashed rgba(20,46,42,0.15);font-size:13px;color:${color};">${label}${note}</td>
+          <td style="padding:8px 0;border-bottom:1px dashed rgba(20,46,42,0.15);font-size:13px;color:${color};text-align:right;white-space:nowrap;">${sign} ${eur(tx.amount)}</td>
+        </tr>`;
+      }).join('')
+    : `<tr><td colspan="3" style="padding:8px 0;font-size:13px;color:${c.ink};opacity:0.6;">(keine Bewegungen)</td></tr>`;
+
+  return `<div style="background:${c.bg};padding:32px 16px;font-family:Georgia,'Times New Roman',serif;color:${c.ink};">
+    <div style="max-width:480px;margin:0 auto;background:${c.paper};border-radius:4px;padding:32px;">
+      <div style="font-family:'Courier New',monospace;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${c.sea};">
+        Kontoauszug &middot; ${monthLabel}
+      </div>
+      <div style="font-size:26px;font-weight:700;margin:8px 0 24px;">${escapeHtml(sonName)}</div>
+
+      <div style="font-family:'Courier New',monospace;font-size:12px;color:${c.sea};margin-bottom:2px;">Kontostand am ${dateFmtDE(rangeStart)}</div>
+      <div style="font-size:20px;font-weight:600;margin-bottom:24px;">${eur(startBalance)}</div>
+
+      <table style="width:100%;border-collapse:collapse;">
+        <thead>
+          <tr>
+            <th style="text-align:left;padding:0 0 6px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${c.sea};border-bottom:1px solid rgba(32,148,139,0.3);">Datum</th>
+            <th style="text-align:left;padding:0 0 6px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${c.sea};border-bottom:1px solid rgba(32,148,139,0.3);">Art</th>
+            <th style="text-align:right;padding:0 0 6px;font-family:'Courier New',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:${c.sea};border-bottom:1px solid rgba(32,148,139,0.3);">Betrag</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+
+      <div style="font-family:'Courier New',monospace;font-size:12px;color:${c.sea};margin:24px 0 2px;">Kontostand am ${dateFmtDE(rangeEnd)}</div>
+      <div style="font-size:24px;font-weight:700;">${eur(endBalance)}</div>
+
+      <div style="font-family:'Courier New',monospace;font-size:11px;color:${c.ink};opacity:0.6;margin-top:28px;line-height:1.5;">
+        Gebundene Investitionen sind in diesem Auszug nicht enthalten.
+      </div>
+    </div>
+  </div>`;
+}
+
+async function sendEmail(env, { to, cc, subject, text, html }) {
   try {
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
@@ -141,7 +207,8 @@ async function sendEmail(env, { to, cc, subject, text }) {
         to: [to],
         cc: cc || [],
         subject,
-        text
+        text,
+        html
       })
     });
     return res.ok;
@@ -202,11 +269,22 @@ async function runMonthlyStatementEmails(env) {
       `Kontostand am ${rangeEnd}: ${eur(Math.round(endBalance * 100) / 100)}\n\n` +
       `(Gebundene Investitionen sind in diesem Auszug nicht enthalten.)`;
 
+    const html = buildStatementHtml({
+      sonName: son.name,
+      monthLabel,
+      rangeStart,
+      rangeEnd,
+      startBalance: Math.round(startBalance * 100) / 100,
+      endBalance: Math.round(endBalance * 100) / 100,
+      monthTxs
+    });
+
     await sendEmail(env, {
       to: son.email,
       cc: ['okeszler@gmail.com'],
       subject: `Kontoauszug ${monthLabel} — ${son.name}`,
-      text
+      text,
+      html
     });
   }
 }
