@@ -1,14 +1,13 @@
-// Vier Cron-Trigger (siehe wrangler.toml): Zinsgutschrift an den möglichen Monatsletzten,
-// automatische Buchungen (z.B. Taschengeld) am 1. jeden Monats, Investitionen täglich,
-// Kontoauszug-Mail am 1. jeden Monats.
+// Drei Cron-Trigger (siehe wrangler.toml): Zinsgutschrift an den möglichen Monatsletzten,
+// automatische Buchungen (z.B. Taschengeld) + Kontoauszug-Mail am 1. jeden Monats,
+// Investitionen täglich.
 export default {
   async scheduled(event, env, ctx) {
     if (event.cron === '0 6 1 * *') {
       await runRecurringBookings(env);
+      await runMonthlyStatementEmails(env);
     } else if (event.cron === '0 22 * * *') {
       await runInvestments(env);
-    } else if (event.cron === '0 7 1 * *') {
-      await runMonthlyStatementEmails(env);
     } else {
       await runMonthlyInterest(env);
     }
