@@ -56,6 +56,13 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .login-card {
     animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
@@ -65,6 +72,21 @@
   .app-shell > .section {
     animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--fade-i, 0) * 70ms);
+  }
+
+  .message-banner {
+    animation: fadeSlideUp 0.35s ease both;
+  }
+
+  /* Details-Sektionen (Auszahlung/Rechner/PIN/Kontobuchungen) öffnen sonst
+     abrupt ohne jede Bewegung — der Inhalt bekommt beim Aufklappen kurz
+     denselben Einflug wie die übrigen Sektionen. */
+  details.opening > *:not(summary) {
+    animation: fadeSlideUp 0.3s ease both;
+  }
+
+  .pin-input.shake {
+    animation: shake 0.4s ease;
   }
 }
 

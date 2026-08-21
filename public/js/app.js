@@ -211,7 +211,11 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     showDashboard();
   } else {
     errorEl.textContent = 'PIN ungültig — bitte nochmal versuchen.';
-    document.getElementById('pin-input').value = '';
+    const pinInput = document.getElementById('pin-input');
+    pinInput.value = '';
+    pinInput.classList.remove('shake');
+    void pinInput.offsetWidth; // Reflow erzwingen, damit die Animation bei wiederholtem Fehler erneut startet
+    pinInput.classList.add('shake');
   }
 });
 
@@ -462,6 +466,16 @@ document.getElementById('calculator-details').addEventListener('toggle', (e) => 
   }
 });
 
+// Native <details> springen sonst abrupt auf — beim Öffnen bekommt der Inhalt
+// kurz denselben Einflug wie die restlichen Sektionen beim Laden.
+document.querySelectorAll('#dashboard details').forEach((details) => {
+  details.addEventListener('toggle', () => {
+    if (!details.open || prefersReducedMotion) return;
+    details.classList.add('opening');
+    setTimeout(() => details.classList.remove('opening'), 350);
+  });
+});
+
 function renderLedger() {
   const body = document.getElementById('ledger-body');
   const empty = document.getElementById('ledger-empty');
@@ -522,7 +536,7 @@ function renderInvestments() {
       ? `<tr id="desc-inv-${i}" style="display:none;"><td colspan="4"><div class="product-description">${escapeHtml(inv.description)}</div></td></tr>`
       : '';
     const interestAtMaturity = Math.round((inv.maturityValue - inv.principal) * 100) / 100;
-    return `<tr>
+    return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${escapeHtml(inv.productName)}${infoBtn}</td>
       <td>${inv.daysRemaining} Tage</td>
       <td>${eur(inv.currentValue)}</td>
@@ -555,12 +569,12 @@ function renderAvailableProducts(products) {
   section.style.display = 'block';
 
   const body = document.getElementById('available-product-body');
-  body.innerHTML = products.map(p => {
+  body.innerHTML = products.map((p, i) => {
     const infoBtn = p.description ? `<button class="info-btn" data-desc="prod-${p.id}" type="button" title="Info">ⓘ</button>` : '';
     const descRow = p.description
       ? `<tr id="desc-prod-${p.id}" style="display:none;"><td colspan="4"><div class="product-description">${escapeHtml(p.description)}</div></td></tr>`
       : '';
-    return `<tr>
+    return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${escapeHtml(p.name)}${infoBtn}</td>
       <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
       <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
