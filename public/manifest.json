@@ -1,7 +1,7 @@
 {
   "name": "Dein Kapital",
   "short_name": "Dein Kapital",
-  "description": "Kapital-Übersicht für Moritz und Florian",
+  "description": "Kapital-Übersicht für Moritz, Florian und Andreea",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verwaltung — Söhne-Kapital</title>
+<title>Verwaltung — Dein Kapital</title>
 <link rel="manifest" href="/manifest.json">
 <meta name="theme-color" content="#FAF3E3">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
@@ -46,10 +46,10 @@
   <div class="son-picker" id="son-picker"></div>
 
   <div class="section">
-    <div class="section-title">Nachricht an Söhne</div>
+    <div class="section-title">Nachricht senden</div>
     <form class="admin-form" id="message-form">
       <select id="message-recipient" required>
-        <option value="">Alle Söhne</option>
+        <option value="">Alle</option>
       </select>
       <textarea id="message-body" class="full" rows="3" placeholder="Nachricht (wird als Banner im Dashboard angezeigt)" required></textarea>
       <button type="submit" class="admin-submit">Nachricht senden</button>
@@ -100,7 +100,7 @@
       <thead><tr><th>Art</th><th>Betrag</th><th>Notiz</th><th></th></tr></thead>
       <tbody id="recurring-body"></tbody>
     </table>
-    <div class="empty-note" id="recurring-empty" style="display:none;">Keine automatische Buchung für diesen Sohn eingerichtet.</div>
+    <div class="empty-note" id="recurring-empty" style="display:none;">Keine automatische Buchung für diese Person eingerichtet.</div>
   </div>
 
   <div class="section">
@@ -109,7 +109,7 @@
       <thead><tr><th>Datum</th><th>Art</th><th>Betrag</th><th></th></tr></thead>
       <tbody id="tx-body"></tbody>
     </table>
-    <div class="empty-note" id="tx-empty" style="display:none;">Noch keine Buchungen für diesen Sohn.</div>
+    <div class="empty-note" id="tx-empty" style="display:none;">Noch keine Buchungen für diese Person.</div>
   </div>
 
   <div class="section">
@@ -147,7 +147,7 @@
       <thead><tr><th>Produkt</th><th>Kapital</th><th>Aktueller Wert</th><th>Fällig am</th><th>Status</th></tr></thead>
       <tbody id="investment-body"></tbody>
     </table>
-    <div class="empty-note" id="investment-empty" style="display:none;">Keine Investitionen für diesen Sohn.</div>
+    <div class="empty-note" id="investment-empty" style="display:none;">Keine Investitionen für diese Person.</div>
   </div>
 </div>
 

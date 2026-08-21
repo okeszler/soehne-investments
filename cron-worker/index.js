@@ -203,7 +203,7 @@ async function sendEmail(env, { to, cc, subject, text, html }) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: 'Söhne-Investment <onboarding@resend.dev>',
+        from: 'Dein Kapital <onboarding@resend.dev>',
         to: [to],
         cc: cc || [],
         subject,
