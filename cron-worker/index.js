@@ -217,6 +217,15 @@ async function sendEmail(env, { to, cc, subject, text, html }) {
   }
 }
 
+const ADMIN_EMAIL = 'okeszler@gmail.com';
+
+// Resend erlaubt beim unverifizierten "onboarding@resend.dev"-Absender NUR
+// Versand an die eigene Account-Adresse (ADMIN_EMAIL) — Sends an andere
+// Empfänger werden mit 403 abgelehnt. Bis eine eigene Domain bei Resend
+// verifiziert ist, gehen alle Kontoauszüge deshalb an ADMIN_EMAIL statt an
+// die jeweilige Person. Auf false stellen, sobald die Domain steht.
+const REDIRECT_STATEMENTS_TO_ADMIN = true;
+
 // Läuft am 1. jeden Monats: schickt jeder Person mit hinterlegter E-Mail-Adresse
 // einen Kontoauszug der FLEX-Bewegungen des VERGANGENEN Monats (Kopie an Papi).
 async function runMonthlyStatementEmails(env) {
@@ -262,7 +271,11 @@ async function runMonthlyStatementEmails(env) {
         }).join('\n')
       : '(keine Bewegungen)';
 
-    const text =
+    const redirectNote = REDIRECT_STATEMENTS_TO_ADMIN
+      ? `[Weiterleitung an Papi — Resend erlaubt noch keinen Direktversand an ${son.email}, bis eine eigene Domain verifiziert ist.]\n\n`
+      : '';
+
+    const text = redirectNote +
       `Kontoauszug FLEX-Konto für ${son.name} — ${monthLabel}\n\n` +
       `Kontostand am ${rangeStart}: ${eur(Math.round(startBalance * 100) / 100)}\n\n` +
       `Bewegungen:\n${lines}\n\n` +
@@ -279,12 +292,19 @@ async function runMonthlyStatementEmails(env) {
       monthTxs
     });
 
-    await sendEmail(env, {
-      to: son.email,
-      cc: ['okeszler@gmail.com'],
-      subject: `Kontoauszug ${monthLabel} — ${son.name}`,
-      text,
-      html
-    });
+    await sendEmail(env, REDIRECT_STATEMENTS_TO_ADMIN
+      ? {
+          to: ADMIN_EMAIL,
+          subject: `[${son.name}] Kontoauszug ${monthLabel}`,
+          text,
+          html
+        }
+      : {
+          to: son.email,
+          cc: [ADMIN_EMAIL],
+          subject: `Kontoauszug ${monthLabel} — ${son.name}`,
+          text,
+          html
+        });
   }
 }
