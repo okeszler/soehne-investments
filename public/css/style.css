@@ -754,11 +754,17 @@ canvas { max-width: 100%; }
 
 @media (max-width: 480px) {
   .stamp-balance { font-size: 42px; }
+  .stamp-card { padding: 32px 20px; }
   .stamp-balance.flap-board {
-    --flap-w: 26px;
-    --flap-h: 41px;
-    --flap-gap: 2px;
-    --flap-font: 23px;
+    /* Feste Pixelwerte liefen bei längeren Kontoständen (mehr Ziffern, z.B.
+       bei Andreea) auf schmalen Handys über und die letzte Nachkommastelle
+       brach in eine zweite Zeile um. Skaliert stattdessen mit der
+       Bildschirmbreite, damit die Kacheln immer in die verfügbare Breite
+       passen statt eine feste Größe zu erzwingen. */
+    --flap-w: clamp(16px, 6.2vw, 26px);
+    --flap-h: clamp(25px, 9.5vw, 41px);
+    --flap-gap: clamp(1px, 0.6vw, 2px);
+    --flap-font: clamp(14px, 5.5vw, 23px);
   }
   .admin-form { grid-template-columns: 1fr; }
 }
