@@ -378,24 +378,28 @@ input, select {
 /* ---------- Lifetime cashback card ---------- */
 
 .cashback-card {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cashback-box {
   background: var(--paper);
   color: var(--ink);
   border-radius: 4px;
   border: 1.5px solid var(--sage);
-  padding: 0 24px;
-  height: 44px;
-  margin-bottom: 24px;
+  padding: 12px 20px;
   transition: background-color 0.2s ease;
   display: flex;
-  align-items: stretch;
-  justify-content: space-between;
-  gap: 12px;
+  align-items: center;
 }
 
-.cashback-eyebrow,
-.cashback-amount {
-  display: flex;
-  align-items: center;
+.cashback-box:first-child {
+  flex: 1;
+}
+
+.cashback-box-amount {
+  justify-content: flex-end;
 }
 
 .cashback-eyebrow {
@@ -413,8 +417,6 @@ input, select {
   font-weight: 700;
   line-height: 1;
   color: var(--rust);
-  margin-left: auto;
-  text-align: right;
 }
 
 /* ---------- Sections ---------- */
