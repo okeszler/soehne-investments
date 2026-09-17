@@ -90,7 +90,7 @@ async function setupPush() {
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const chartAnimation = prefersReducedMotion ? false : { duration: 700, easing: 'easeOutQuart' };
 
-function animateNumber(el, to, formatFn, duration = 600) {
+function animateNumber(el, to, formatFn, duration = 600, power = 3) {
   if (prefersReducedMotion) {
     el.textContent = formatFn(to);
     return;
@@ -105,7 +105,7 @@ function animateNumber(el, to, formatFn, duration = 600) {
   function tick(now) {
     if (done) return;
     const t = Math.min(1, (now - start) / duration);
-    const eased = 1 - Math.pow(1 - t, 3);
+    const eased = 1 - Math.pow(1 - t, power);
     el.textContent = formatFn(to * eased);
     if (t < 1) requestAnimationFrame(tick);
     else finish();
@@ -163,7 +163,7 @@ function showDashboard() {
 
   const cashbackCard = document.getElementById('cashback-card');
   if (currentData.lifetimeCashback > 0) {
-    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 3500);
+    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 3500, 6);
     cashbackCard.style.display = 'flex';
   } else {
     cashbackCard.style.display = 'none';
