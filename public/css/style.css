@@ -400,6 +400,7 @@ input, select {
 
 .cashback-box-amount {
   justify-content: flex-end;
+  flex: 0 0 150px;
 }
 
 .cashback-eyebrow {
@@ -417,7 +418,9 @@ input, select {
   font-size: 20px;
   font-weight: 600;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
   color: var(--rust);
+  white-space: nowrap;
 }
 
 /* ---------- Sections ---------- */
