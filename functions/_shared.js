@@ -81,13 +81,16 @@ export async function requireAdminSession(request, env) {
   return session;
 }
 
+// 'withdrawal' und 'kest' mindern den Saldo, alle anderen Buchungstypen erhöhen ihn.
+export const isDebit = type => type === 'withdrawal' || type === 'kest';
+
 // Berechnet Kontostand & Verlauf (kumulativ pro Tag) aus den Transaktionen
 export function computeBalanceHistory(transactions) {
   const sorted = [...transactions].sort((a, b) => a.date.localeCompare(b.date));
   let running = 0;
   const history = [];
   for (const tx of sorted) {
-    const signed = tx.type === 'withdrawal' ? -tx.amount : tx.amount;
+    const signed = isDebit(tx.type) ? -tx.amount : tx.amount;
     running += signed;
     history.push({ date: tx.date, balance: Math.round(running * 100) / 100, type: tx.type, amount: tx.amount, note: tx.note });
   }
@@ -156,7 +159,7 @@ export async function createInvestment(env, sonId, productId, amount) {
   const { results: txs } = await env.DB.prepare(
     'SELECT type, amount FROM transactions WHERE son_id = ?'
   ).bind(sonId).all();
-  const balance = (txs || []).reduce((sum, tx) => sum + (tx.type === 'withdrawal' ? -tx.amount : tx.amount), 0);
+  const balance = (txs || []).reduce((sum, tx) => sum + (isDebit(tx.type) ? -tx.amount : tx.amount), 0);
   if (amount > balance) {
     return { error: `Nicht genug FLEX-Guthaben (verfügbar: ${balance.toFixed(2)} €)`, status: 400 };
   }

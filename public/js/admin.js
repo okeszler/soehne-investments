@@ -1,8 +1,8 @@
 const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
 const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback' };
-const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback', kest: 'KESt' };
+const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback', kest: 'tx-kest' };
 
 const escapeDiv = document.createElement('div');
 function escapeHtml(str) {

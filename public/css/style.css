@@ -687,6 +687,7 @@ canvas { max-width: 100%; }
 .tx-withdrawal { color: var(--rust); }
 .tx-interest { color: var(--brass-bright); }
 .tx-cashback { color: var(--sage); }
+.tx-kest { color: var(--rust); }
 
 .empty-note {
   color: var(--muted);

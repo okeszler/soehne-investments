@@ -2,8 +2,9 @@ const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currenc
 const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback' };
-const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback', kest: 'KESt' };
+const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback', kest: 'tx-kest' };
+const isDebit = type => type === 'withdrawal' || type === 'kest';
 
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -527,7 +528,7 @@ function renderLedger() {
   const visibleTxs = ledgerExpanded ? txs : txs.slice(0, LEDGER_PAGE_SIZE);
 
   body.innerHTML = visibleTxs.map((tx, i) => {
-    const sign = tx.type === 'withdrawal' ? '−' : '+';
+    const sign = isDebit(tx.type) ? '−' : '+';
     const cls = txClass[tx.type] || 'tx-interest';
     return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${dateFmt(tx.date)}</td>
@@ -538,7 +539,7 @@ function renderLedger() {
 
   if (txs.length > LEDGER_PAGE_SIZE) {
     showAllBtn.style.display = 'block';
-    showAllBtn.textContent = ledgerExpanded ? 'Weniger zeigen' : 'Alle zeigen';
+    showAllBtn.textContent = ledgerExpanded ? 'Weniger' : 'Alle ansehen';
   } else {
     showAllBtn.style.display = 'none';
   }

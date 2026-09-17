@@ -14,6 +14,9 @@ export default {
   }
 };
 
+// 'withdrawal' und 'kest' mindern den Saldo, alle anderen Buchungstypen erhöhen ihn.
+const isDebit = type => type === 'withdrawal' || type === 'kest';
+
 // "maturity" (endfällig) bekommt nie eine Zwischen-Gutschrift (periodDays = Infinity,
 // die Schleife unten macht dann immer "continue") — die gesamte Laufzeit-Verzinsung
 // wird erst im Fälligkeits-Zweig auf einmal mit dem Kapital ausgezahlt.
@@ -88,15 +91,29 @@ async function runMonthlyInterest(env) {
     ).bind(son.id).all();
 
     let balance = 0;
-    for (const tx of txs || []) balance += tx.type === 'withdrawal' ? -tx.amount : tx.amount;
+    for (const tx of txs || []) balance += isDebit(tx.type) ? -tx.amount : tx.amount;
 
-    const grossInterest = balance * son.annual_rate / 12;
-    const interest = Math.round((grossInterest * (1 - son.kest_rate)) * 100) / 100;
-    if (interest <= 0) continue;
+    const grossInterest = Math.round((balance * son.annual_rate / 12) * 100) / 100;
+    const kestAmount = Math.round((grossInterest * son.kest_rate) * 100) / 100;
+    const netInterest = Math.round((grossInterest - kestAmount) * 100) / 100;
+    if (netInterest <= 0) continue;
 
-    await env.DB.prepare(
-      'INSERT INTO transactions (son_id, date, type, amount) VALUES (?, ?, ?, ?)'
-    ).bind(son.id, dateStr, 'interest', interest).run();
+    // Zinsgutschrift (brutto) und KESt-Abzug als getrennte Buchungen, damit im
+    // Kontoauszug/Ledger nachvollziehbar bleibt, wie viel Steuer abgezogen wurde
+    // (statt einer bereits verrechneten Netto-Zinsgutschrift).
+    const inserts = [
+      env.DB.prepare(
+        'INSERT INTO transactions (son_id, date, type, amount) VALUES (?, ?, ?, ?)'
+      ).bind(son.id, dateStr, 'interest', grossInterest)
+    ];
+    if (kestAmount > 0) {
+      inserts.push(
+        env.DB.prepare(
+          'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+        ).bind(son.id, dateStr, 'kest', kestAmount, 'KESt auf Zinsgutschrift')
+      );
+    }
+    await env.DB.batch(inserts);
   }
 }
 
@@ -122,7 +139,7 @@ async function runRecurringBookings(env) {
 }
 
 const eur = n => `${n.toFixed(2).replace('.', ',')} €`;
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback', kest: 'KESt' };
 const monthNames = [
   'Januar', 'Februar', 'März', 'April', 'Mai', 'Juni',
   'Juli', 'August', 'September', 'Oktober', 'November', 'Dezember'
@@ -150,9 +167,9 @@ function buildStatementHtml({ sonName, monthLabel, rangeStart, rangeEnd, startBa
   const c = EMAIL_COLORS;
   const rows = monthTxs.length
     ? monthTxs.map(tx => {
-        const isWithdrawal = tx.type === 'withdrawal';
-        const color = isWithdrawal ? c.rust : c.sea;
-        const sign = isWithdrawal ? '−' : '+';
+        const debit = isDebit(tx.type);
+        const color = debit ? c.rust : c.sea;
+        const sign = debit ? '−' : '+';
         const label = typeLabels[tx.type] || tx.type;
         const note = tx.note ? ` <span style="color:${c.ink};opacity:0.6;">(${escapeHtml(tx.note)})</span>` : '';
         return `<tr>
@@ -251,7 +268,7 @@ async function runMonthlyStatementEmails(env) {
     let startBalance = 0;
     const monthTxs = [];
     for (const tx of txs || []) {
-      const signed = tx.type === 'withdrawal' ? -tx.amount : tx.amount;
+      const signed = isDebit(tx.type) ? -tx.amount : tx.amount;
       if (tx.date < rangeStart) {
         startBalance += signed;
       } else if (tx.date <= rangeEnd) {
@@ -259,12 +276,12 @@ async function runMonthlyStatementEmails(env) {
       }
     }
     const endBalance = monthTxs.reduce(
-      (sum, tx) => sum + (tx.type === 'withdrawal' ? -tx.amount : tx.amount), startBalance
+      (sum, tx) => sum + (isDebit(tx.type) ? -tx.amount : tx.amount), startBalance
     );
 
     const lines = monthTxs.length
       ? monthTxs.map(tx => {
-          const sign = tx.type === 'withdrawal' ? '-' : '+';
+          const sign = isDebit(tx.type) ? '-' : '+';
           const label = typeLabels[tx.type] || tx.type;
           const note = tx.note ? ` (${tx.note})` : '';
           return `${tx.date}  ${label}${note}: ${sign}${eur(tx.amount)}`;
