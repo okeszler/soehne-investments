@@ -16,7 +16,7 @@ CREATE TABLE transactions (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   son_id INTEGER NOT NULL REFERENCES sons(id),
   date TEXT NOT NULL,               -- YYYY-MM-DD
-  type TEXT NOT NULL CHECK (type IN ('deposit','withdrawal','interest')),
+  type TEXT NOT NULL CHECK (type IN ('deposit','withdrawal','interest','cashback')),
   amount REAL NOT NULL,             -- immer positiv, Vorzeichen ergibt sich aus type
   note TEXT,
   created_at TEXT NOT NULL DEFAULT (datetime('now'))

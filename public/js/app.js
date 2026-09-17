@@ -2,7 +2,8 @@ const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currenc
 const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback' };
+const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback' };
 
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -161,7 +162,15 @@ function showDashboard() {
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
 
-  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
+  const cashbackCard = document.getElementById('cashback-card');
+  if (currentData.lifetimeCashback > 0) {
+    document.getElementById('cashback-amount').textContent = eur(currentData.lifetimeCashback);
+    cashbackCard.style.display = 'block';
+  } else {
+    cashbackCard.style.display = 'none';
+  }
+
+  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .cashback-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
   });
 
@@ -333,7 +342,7 @@ function renderLedger() {
 
   body.innerHTML = txs.map((tx, i) => {
     const sign = tx.type === 'withdrawal' ? '−' : '+';
-    const cls = tx.type === 'deposit' ? 'tx-deposit' : tx.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
+    const cls = txClass[tx.type] || 'tx-interest';
     return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${dateFmt(tx.date)}</td>
       <td class="${cls}">${typeLabels[tx.type]}</td>

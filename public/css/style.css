@@ -62,6 +62,7 @@
   }
 
   .app-shell > .stamp-card,
+  .app-shell > .cashback-card,
   .app-shell > .section {
     animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--fade-i, 0) * 70ms);
@@ -356,6 +357,35 @@ input, select {
 
 .stamp-daily .amount { font-weight: 600; }
 
+/* ---------- Lifetime cashback card ---------- */
+
+.cashback-card {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  border: 1.5px solid var(--sage);
+  padding: 18px 24px;
+  margin-bottom: 24px;
+  transition: background-color 0.2s ease;
+}
+
+.cashback-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--sage);
+}
+
+.cashback-amount {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.15;
+  color: var(--sage);
+  margin-top: 4px;
+}
+
 /* ---------- Sections ---------- */
 
 .section {
@@ -462,6 +492,7 @@ canvas { max-width: 100%; }
 .tx-deposit { color: var(--sage); }
 .tx-withdrawal { color: var(--rust); }
 .tx-interest { color: var(--brass-bright); }
+.tx-cashback { color: var(--sage); }
 
 .empty-note {
   color: var(--muted);
