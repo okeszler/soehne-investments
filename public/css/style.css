@@ -69,6 +69,7 @@
   }
 
   .app-shell > .stamp-card,
+  .app-shell > .cashback-card,
   .app-shell > .section {
     animation: fadeSlideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--fade-i, 0) * 70ms);
@@ -252,6 +253,24 @@ input, select {
 }
 
 .logout-link:hover { opacity: 1; }
+
+.ledger-show-all {
+  display: block;
+  margin: 14px auto 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 0.85;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.ledger-show-all:hover { opacity: 1; }
 
 .header-actions {
   display: flex;
@@ -481,6 +500,54 @@ input, select {
 
 .stamp-daily .amount { font-weight: 600; }
 
+/* ---------- Lifetime cashback card ---------- */
+
+.cashback-card {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.cashback-box {
+  background: var(--paper);
+  color: var(--ink);
+  border-radius: 4px;
+  border: 1.5px solid var(--sage);
+  padding: 12px 20px;
+  transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+}
+
+.cashback-box:first-child {
+  flex: 1;
+}
+
+.cashback-box-amount {
+  justify-content: flex-end;
+  flex: 0 0 150px;
+}
+
+.cashback-eyebrow {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--rust);
+}
+
+.cashback-amount {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  color: var(--rust);
+  white-space: nowrap;
+}
+
 /* ---------- Sections ---------- */
 
 .section {
@@ -515,10 +582,21 @@ input, select {
 summary.section-title {
   cursor: pointer;
   user-select: none;
+  list-style: none;
 }
 
-summary.section-title::marker {
-  color: var(--muted);
+summary.section-title::-webkit-details-marker {
+  display: none;
+}
+
+summary.section-title::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+details[open] > summary.section-title::before {
+  transform: rotate(90deg);
 }
 
 details:not([open]) > summary.section-title {
@@ -608,6 +686,7 @@ canvas { max-width: 100%; }
 .tx-deposit { color: var(--sage); }
 .tx-withdrawal { color: var(--rust); }
 .tx-interest { color: var(--brass-bright); }
+.tx-cashback { color: var(--sage); }
 
 .empty-note {
   color: var(--muted);

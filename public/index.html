@@ -83,6 +83,27 @@
     </details>
   </div>
 
+  <div class="cashback-card" id="cashback-card" style="display:none;">
+    <div class="cashback-box">
+      <div class="cashback-eyebrow">Lifetime cashback earned</div>
+    </div>
+    <div class="cashback-box cashback-box-amount">
+      <div class="cashback-amount" id="cashback-amount">€ 0,00</div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">FLEX-Bewegungen</div>
+    <table class="ledger-table" id="ledger-table">
+      <thead>
+        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+      </thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    <button type="button" class="ledger-show-all" id="ledger-show-all" style="display:none;">Alle zeigen</button>
+  </div>
+
   <div class="section" id="investments-section" style="display:none;">
     <div class="section-title">Investitionen</div>
     <table class="ledger-table" id="investment-table">
@@ -115,7 +136,7 @@
     <div id="payout-request-message" class="pin-change-message"></div>
   </details>
 
-  <details class="section" id="calculator-details">
+  <details class="section" id="calculator-section">
     <summary class="section-title">Zinseszinsrechner</summary>
     <form class="admin-form" id="calculator-form">
       <input type="number" id="calc-capital" step="0.01" min="0" placeholder="Startkapital in €" value="1000" required>

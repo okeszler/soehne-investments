@@ -16,6 +16,10 @@ export async function onRequestGet({ request, env }) {
 
   const flexAccruedInterest = computeFlexAccruedInterest(txs, cashBalance, son.annual_rate, son.kest_rate);
 
+  const lifetimeCashback = Math.round(
+    (txs || []).filter(t => t.type === 'cashback').reduce((sum, t) => sum + t.amount, 0) * 100
+  ) / 100;
+
   const { results: rawInvestments } = await env.DB.prepare(
     `SELECT i.id, i.principal, i.balance, i.start_date, i.maturity_date, i.last_credit_date, i.status,
             p.name as product_name, p.apy, p.lock_days, p.interest_frequency, p.description
@@ -77,6 +81,7 @@ export async function onRequestGet({ request, env }) {
     balance,
     cashBalance,
     flexAccruedInterest,
+    lifetimeCashback,
     dailyInterest,
     totalInterestEarned,
     history: historyWithInvestments,

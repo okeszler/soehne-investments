@@ -1,7 +1,8 @@
 const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
 const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback' };
+const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback' };
 
 const escapeDiv = document.createElement('div');
 function escapeHtml(str) {
@@ -151,7 +152,7 @@ async function loadTransactions() {
   empty.style.display = 'none';
 
   body.innerHTML = data.transactions.map(tx => {
-    const cls = tx.type === 'deposit' ? 'tx-deposit' : tx.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
+    const cls = txClass[tx.type] || 'tx-interest';
     return `<tr>
       <td>${dateFmt(tx.date)}</td>
       <td class="${cls}">${typeLabels[tx.type]}</td>

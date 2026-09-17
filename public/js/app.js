@@ -2,7 +2,8 @@ const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currenc
 const eur = (n) => eurFormatter.format(n);
 const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
 
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift' };
+const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback' };
+const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback' };
 
 function cssVar(name) {
   return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -183,6 +184,32 @@ function renderFlapBoard(container, text) {
   });
 }
 
+// Zähl-Animation für einfache Zahlenwerte (z.B. Lifetime-Cashback) — eased
+// count-up statt Sprung auf den Zielwert.
+function animateNumber(el, to, formatFn, duration = 600, power = 3) {
+  if (prefersReducedMotion) {
+    el.textContent = formatFn(to);
+    return;
+  }
+  const start = performance.now();
+  let done = false;
+  function finish() {
+    if (done) return;
+    done = true;
+    el.textContent = formatFn(to);
+  }
+  function tick(now) {
+    if (done) return;
+    const t = Math.min(1, (now - start) / duration);
+    const eased = 1 - Math.pow(1 - t, power);
+    el.textContent = formatFn(to * eased);
+    if (t < 1) requestAnimationFrame(tick);
+    else finish();
+  }
+  requestAnimationFrame(tick);
+  setTimeout(finish, duration + 150); // Sicherheitsnetz falls rAF ausgesetzt wird (z.B. Hintergrund-Tab)
+}
+
 async function checkSession() {
   const res = await fetch('/api/me');
   if (res.ok) {
@@ -237,7 +264,15 @@ function showDashboard() {
   document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);
   renderKestExplainer();
 
-  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
+  const cashbackCard = document.getElementById('cashback-card');
+  if (currentData.lifetimeCashback > 0) {
+    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 3500, 6);
+    cashbackCard.style.display = 'flex';
+  } else {
+    cashbackCard.style.display = 'none';
+  }
+
+  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .cashback-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
   });
 
@@ -249,7 +284,7 @@ function showDashboard() {
 
   try {
     renderHistoryChart();
-    renderCalculator();
+    if (document.getElementById('calculator-section').open) renderCalculator();
   } catch (err) {
     console.error('Diagramme konnten nicht geladen werden:', err);
   }
@@ -288,6 +323,16 @@ function renderKestExplainer() {
 document.getElementById('kest-info-btn').addEventListener('click', () => {
   const el = document.getElementById('kest-explainer');
   el.style.display = el.style.display === 'none' ? '' : 'none';
+});
+
+document.getElementById('calculator-section').addEventListener('toggle', (e) => {
+  if (e.target.open) {
+    try {
+      renderCalculator();
+    } catch (err) {
+      console.error('Zinseszinsrechner konnte nicht geladen werden:', err);
+    }
+  }
 });
 
 function renderHistoryChart() {
@@ -454,18 +499,6 @@ document.getElementById('calculator-form').addEventListener('submit', (e) => {
   }
 });
 
-// Chart.js rendert in ein verstecktes <canvas> mit Breite 0, solange der
-// umgebende <details>-Block zugeklappt ist — beim Aufklappen neu zeichnen.
-document.getElementById('calculator-details').addEventListener('toggle', (e) => {
-  if (e.target.open && currentData) {
-    try {
-      renderCalculator();
-    } catch (err) {
-      console.error('Rechner konnte nicht aktualisiert werden:', err);
-    }
-  }
-});
-
 // Native <details> springen sonst abrupt auf — beim Öffnen bekommt der Inhalt
 // kurz denselben Einflug wie die restlichen Sektionen beim Laden.
 document.querySelectorAll('#dashboard details').forEach((details) => {
@@ -476,26 +509,45 @@ document.querySelectorAll('#dashboard details').forEach((details) => {
   });
 });
 
+const LEDGER_PAGE_SIZE = 5;
+let ledgerExpanded = false;
+
 function renderLedger() {
   const body = document.getElementById('ledger-body');
   const empty = document.getElementById('ledger-empty');
+  const showAllBtn = document.getElementById('ledger-show-all');
   const txs = [...currentData.transactions].reverse();
 
   if (!txs.length) {
     empty.style.display = 'block';
+    showAllBtn.style.display = 'none';
     return;
   }
 
-  body.innerHTML = txs.map((tx, i) => {
+  const visibleTxs = ledgerExpanded ? txs : txs.slice(0, LEDGER_PAGE_SIZE);
+
+  body.innerHTML = visibleTxs.map((tx, i) => {
     const sign = tx.type === 'withdrawal' ? '−' : '+';
-    const cls = tx.type === 'deposit' ? 'tx-deposit' : tx.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
+    const cls = txClass[tx.type] || 'tx-interest';
     return `<tr style="--fade-i: ${Math.min(i, 12)}">
       <td>${dateFmt(tx.date)}</td>
       <td class="${cls}">${typeLabels[tx.type]}</td>
       <td style="text-align:right;" class="${cls}">${sign} ${eur(tx.amount)}</td>
     </tr>`;
   }).join('');
+
+  if (txs.length > LEDGER_PAGE_SIZE) {
+    showAllBtn.style.display = 'block';
+    showAllBtn.textContent = ledgerExpanded ? 'Weniger zeigen' : 'Alle zeigen';
+  } else {
+    showAllBtn.style.display = 'none';
+  }
 }
+
+document.getElementById('ledger-show-all').addEventListener('click', () => {
+  ledgerExpanded = !ledgerExpanded;
+  renderLedger();
+});
 
 function renderMessages() {
   const container = document.getElementById('message-banners');
