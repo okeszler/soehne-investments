@@ -364,9 +364,13 @@ input, select {
   color: var(--ink);
   border-radius: 4px;
   border: 1.5px solid var(--sage);
-  padding: 18px 24px;
+  padding: 9px 24px;
   margin-bottom: 24px;
   transition: background-color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .cashback-eyebrow {
@@ -379,11 +383,10 @@ input, select {
 
 .cashback-amount {
   font-family: var(--font-display);
-  font-size: 32px;
+  font-size: 20px;
   font-weight: 600;
   line-height: 1.15;
   color: var(--sage);
-  margin-top: 4px;
 }
 
 /* ---------- Sections ---------- */
