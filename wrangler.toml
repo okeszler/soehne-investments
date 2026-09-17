@@ -2,6 +2,9 @@ name = "soehne-investment"
 compatibility_date = "2026-07-01"
 pages_build_output_dir = "public"
 
+[build]
+command = "npm install"
+
 [[d1_databases]]
 binding = "DB"
 database_name = "soehne-investment"
