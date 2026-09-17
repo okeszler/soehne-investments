@@ -298,7 +298,7 @@ function showDashboard() {
   }
 }
 
-const BANK_KEST_RATE = 0.275;
+const BANK_KEST_RATE = 0.25;
 const pct = v => `${(v * 100).toFixed(2).replace('.', ',')}%`;
 
 function renderKestExplainer() {
@@ -319,7 +319,7 @@ function renderKestExplainer() {
   document.getElementById('kest-note-text').textContent =
     'Alle Zinsgutschriften sind von der Kapitalertragssteuer befreit.';
   document.getElementById('kest-explainer').innerHTML =
-    `Normale Banken behalten in Österreich automatisch 27,5% deiner Zinsgewinne als
+    `Normale Banken behalten in Österreich automatisch 25% deiner Zinsgewinne als
     <strong>Kapitalertragssteuer (KESt)</strong> ein, bevor du sie siehst. Papi übernimmt
     diese Steuer für dich — du bekommst den vollen Zinssatz ohne Abzug.<br><br>
     Konkret: bei deinem FLEX-Zinssatz von ${pct(rate)} p.a. würde eine normale Bank dir
