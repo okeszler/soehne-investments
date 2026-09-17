@@ -162,7 +162,15 @@ function showDashboard() {
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
 
-  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .section').forEach((el, i) => {
+  const cashbackCard = document.getElementById('cashback-card');
+  if (currentData.lifetimeCashback > 0) {
+    document.getElementById('cashback-amount').textContent = eur(currentData.lifetimeCashback);
+    cashbackCard.style.display = 'block';
+  } else {
+    cashbackCard.style.display = 'none';
+  }
+
+  document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .cashback-card, #dashboard > .section').forEach((el, i) => {
     el.style.setProperty('--fade-i', i);
   });
 
