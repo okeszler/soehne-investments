@@ -95,7 +95,19 @@
   </div>
 
   <div class="section">
-    <div class="section-title">Zinseszinsrechner</div>
+    <div class="section-title">FLEX-Bewegungen</div>
+    <table class="ledger-table" id="ledger-table">
+      <thead>
+        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+      </thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    <button type="button" class="ledger-show-all" id="ledger-show-all" style="display:none;">Alle zeigen</button>
+  </div>
+
+  <details class="section" id="calculator-section">
+    <summary class="section-title">Zinseszinsrechner</summary>
     <form class="admin-form" id="calculator-form">
       <input type="number" id="calc-capital" step="0.01" min="0" placeholder="Startkapital in €" value="1000" required>
       <div class="calc-duration">
@@ -116,18 +128,7 @@
     </form>
     <canvas id="calculator-chart" height="90"></canvas>
     <div class="projection-footnote" id="calculator-footnote"></div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">FLEX-Bewegungen</div>
-    <table class="ledger-table" id="ledger-table">
-      <thead>
-        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
-      </thead>
-      <tbody id="ledger-body"></tbody>
-    </table>
-    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
-  </div>
+  </details>
 
   <div class="section">
     <div class="section-title">PIN ändern</div>

@@ -182,11 +182,21 @@ function showDashboard() {
 
   try {
     renderHistoryChart();
-    renderCalculator();
+    if (document.getElementById('calculator-section').open) renderCalculator();
   } catch (err) {
     console.error('Diagramme konnten nicht geladen werden:', err);
   }
 }
+
+document.getElementById('calculator-section').addEventListener('toggle', (e) => {
+  if (e.target.open) {
+    try {
+      renderCalculator();
+    } catch (err) {
+      console.error('Zinseszinsrechner konnte nicht geladen werden:', err);
+    }
+  }
+});
 
 function renderHistoryChart() {
   const ctx = document.getElementById('history-chart');
@@ -330,17 +340,24 @@ document.getElementById('calculator-form').addEventListener('submit', (e) => {
   }
 });
 
+const LEDGER_PAGE_SIZE = 5;
+let ledgerExpanded = false;
+
 function renderLedger() {
   const body = document.getElementById('ledger-body');
   const empty = document.getElementById('ledger-empty');
+  const showAllBtn = document.getElementById('ledger-show-all');
   const txs = [...currentData.transactions].reverse();
 
   if (!txs.length) {
     empty.style.display = 'block';
+    showAllBtn.style.display = 'none';
     return;
   }
 
-  body.innerHTML = txs.map((tx, i) => {
+  const visibleTxs = ledgerExpanded ? txs : txs.slice(0, LEDGER_PAGE_SIZE);
+
+  body.innerHTML = visibleTxs.map((tx, i) => {
     const sign = tx.type === 'withdrawal' ? '−' : '+';
     const cls = txClass[tx.type] || 'tx-interest';
     return `<tr style="--fade-i: ${Math.min(i, 12)}">
@@ -349,7 +366,19 @@ function renderLedger() {
       <td style="text-align:right;" class="${cls}">${sign} ${eur(tx.amount)}</td>
     </tr>`;
   }).join('');
+
+  if (txs.length > LEDGER_PAGE_SIZE) {
+    showAllBtn.style.display = 'block';
+    showAllBtn.textContent = ledgerExpanded ? 'Weniger zeigen' : 'Alle zeigen';
+  } else {
+    showAllBtn.style.display = 'none';
+  }
 }
+
+document.getElementById('ledger-show-all').addEventListener('click', () => {
+  ledgerExpanded = !ledgerExpanded;
+  renderLedger();
+});
 
 function renderMessages() {
   const container = document.getElementById('message-banners');
