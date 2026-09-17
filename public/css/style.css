@@ -387,6 +387,8 @@ input, select {
   font-weight: 600;
   line-height: 1.15;
   color: var(--sage);
+  margin-left: auto;
+  text-align: right;
 }
 
 /* ---------- Sections ---------- */
