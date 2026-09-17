@@ -401,9 +401,9 @@ input, select {
 }
 
 .cashback-amount {
-  font-family: var(--font-display);
-  font-size: 20px;
-  font-weight: 600;
+  font-family: var(--font-body);
+  font-size: 18px;
+  font-weight: 700;
   line-height: 1;
   color: var(--sage);
   margin-left: auto;
