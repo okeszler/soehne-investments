@@ -1,5 +1,7 @@
 import { requireAdminSession, json } from '../../_shared.js';
 
+export const CURVE_CASHBACK_RATE = 0.03;
+
 export async function onRequestGet({ request, env }) {
   const session = await requireAdminSession(request, env);
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
@@ -20,8 +22,23 @@ export async function onRequestPost({ request, env }) {
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
   const { sonId, date, type, amount, note } = await request.json();
-  if (!sonId || !date || !['deposit', 'withdrawal', 'interest'].includes(type) || !(amount > 0)) {
+  if (!sonId || !date || !['deposit', 'withdrawal', 'interest', 'curve_payment'].includes(type) || !(amount > 0)) {
     return json({ error: 'Ungültige Eingabe' }, { status: 400 });
+  }
+
+  if (type === 'curve_payment') {
+    // Curve-Kartenzahlung: Betrag wird abgebucht, gleichzeitig gibt's 3% Cashback gutgeschrieben.
+    const cashback = Math.round(amount * CURVE_CASHBACK_RATE * 100) / 100;
+    const label = note ? `Curve-Zahlung: ${note}` : 'Curve-Zahlung';
+    await env.DB.batch([
+      env.DB.prepare(
+        'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+      ).bind(sonId, date, 'withdrawal', amount, label),
+      env.DB.prepare(
+        'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+      ).bind(sonId, date, 'cashback', cashback, `3% Cashback für Curve-Zahlung${note ? `: ${note}` : ''}`)
+    ]);
+    return json({ ok: true });
   }
 
   await env.DB.prepare(
