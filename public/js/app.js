@@ -163,7 +163,7 @@ function showDashboard() {
 
   const cashbackCard = document.getElementById('cashback-card');
   if (currentData.lifetimeCashback > 0) {
-    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 2400);
+    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 3500);
     cashbackCard.style.display = 'flex';
   } else {
     cashbackCard.style.display = 'none';
