@@ -260,7 +260,6 @@ function showDashboard() {
   document.getElementById('stamp-date').textContent = dateFmt(new Date().toISOString());
   renderFlapBoard(document.getElementById('balance-amount'), eur(currentData.balance));
   document.getElementById('daily-interest').textContent = eur(currentData.dailyInterest);
-  document.getElementById('total-interest').textContent = eur(currentData.totalInterestEarned);
   document.getElementById('flex-balance-line').textContent = `Verfügbar: ${eur(currentData.cashBalance)}`;
   document.getElementById('flex-ledger-balance-amount').textContent = eur(currentData.cashBalance);
   renderKestExplainer();
@@ -271,6 +270,14 @@ function showDashboard() {
     cashbackCard.style.display = 'flex';
   } else {
     cashbackCard.style.display = 'none';
+  }
+
+  const interestCard = document.getElementById('interest-card');
+  if (currentData.totalInterestEarned > 0) {
+    animateNumber(document.getElementById('total-interest'), currentData.totalInterestEarned, eur, 3500, 6);
+    interestCard.style.display = 'flex';
+  } else {
+    interestCard.style.display = 'none';
   }
 
   document.querySelectorAll('#dashboard > .stamp-card, #dashboard > .cashback-card, #dashboard > .section').forEach((el, i) => {
