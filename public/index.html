@@ -67,6 +67,18 @@
     <div class="cashback-amount" id="cashback-amount">€ 0,00</div>
   </div>
 
+  <div class="section">
+    <div class="section-title">FLEX-Bewegungen</div>
+    <table class="ledger-table" id="ledger-table">
+      <thead>
+        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
+      </thead>
+      <tbody id="ledger-body"></tbody>
+    </table>
+    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
+    <button type="button" class="ledger-show-all" id="ledger-show-all" style="display:none;">Alle zeigen</button>
+  </div>
+
   <div class="section" id="investments-section" style="display:none;">
     <div class="section-title">Investitionen</div>
     <table class="ledger-table" id="investment-table">
@@ -92,18 +104,6 @@
   <div class="section">
     <div class="section-title">Verlauf</div>
     <canvas id="history-chart" height="90"></canvas>
-  </div>
-
-  <div class="section">
-    <div class="section-title">FLEX-Bewegungen</div>
-    <table class="ledger-table" id="ledger-table">
-      <thead>
-        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
-      </thead>
-      <tbody id="ledger-body"></tbody>
-    </table>
-    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
-    <button type="button" class="ledger-show-all" id="ledger-show-all" style="display:none;">Alle zeigen</button>
   </div>
 
   <details class="section" id="calculator-section">
