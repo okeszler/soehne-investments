@@ -108,9 +108,11 @@ Drei Zeitpläne:
 - **Investitionen**: täglich — bucht periodische Zinsen je nach
   Zinszubuchungs-Intervall des Produkts (monatlich/vierteljährlich/jährlich)
   auf die gesperrte Investition, und überweist bei Ablauf der Bindungsfrist
-  Kapital + Zinsen als eine Buchung zurück aufs FLEX-Konto. Bei "endfällig"
-  gibt es keine Zwischen-Gutschrift, die gesamte Verzinsung erfolgt in einer
-  Summe bei Fälligkeit.
+  Kapital, Zinsgutschrift (brutto) und KESt-Abzug bei Ablauf der Bindungsfrist
+  als getrennte Buchungen zurück aufs FLEX-Konto (KESt-Zeile nur, wenn für die
+  Person ein KESt-Satz hinterlegt ist). Bei "endfällig" gibt es keine
+  Zwischen-Gutschrift, die gesamte Verzinsung erfolgt in einer Summe bei
+  Fälligkeit.
 
 ## Danach
 

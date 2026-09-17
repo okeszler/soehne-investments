@@ -31,7 +31,7 @@ async function runInvestments(env) {
   const todayStr = today.toISOString().slice(0, 10);
 
   const { results: investments } = await env.DB.prepare(
-    `SELECT i.id, i.son_id, i.balance, i.maturity_date, i.last_credit_date,
+    `SELECT i.id, i.son_id, i.principal, i.balance, i.maturity_date, i.last_credit_date, i.kest_accrued,
             p.name as product_name, p.apy, p.interest_frequency, s.kest_rate
      FROM investments i
      JOIN products p ON p.id = i.product_id
@@ -42,21 +42,46 @@ async function runInvestments(env) {
   for (const inv of investments || []) {
     const elapsedDays = Math.floor((today - new Date(inv.last_credit_date + 'T00:00:00Z')) / 86400000);
     let balance = inv.balance;
+    let kestAccrued = inv.kest_accrued;
     if (elapsedDays > 0) {
       const interest = Math.round((inv.balance * inv.apy * elapsedDays / 365) * 100) / 100;
-      const netInterest = Math.round((interest * (1 - inv.kest_rate)) * 100) / 100;
+      const kestAmount = Math.round((interest * inv.kest_rate) * 100) / 100;
+      const netInterest = Math.round((interest - kestAmount) * 100) / 100;
       balance = Math.round((inv.balance + netInterest) * 100) / 100;
+      kestAccrued = Math.round((inv.kest_accrued + kestAmount) * 100) / 100;
     }
 
     if (todayStr >= inv.maturity_date) {
-      await env.DB.batch([
+      // Rückzahlung in Kapital / Zinsgutschrift (brutto) / KESt aufgesplittet, statt
+      // als eine bereits verrechnete Summe "inkl. Zinsen" zu buchen — die Brutto-Zinsen
+      // ergeben sich aus der bereits netto verzinsten `balance` plus der über die
+      // Laufzeit kumulierten `kestAccrued` (netInterest = grossInterest - kest).
+      const grossInterest = Math.round((balance - inv.principal + kestAccrued) * 100) / 100;
+      const inserts = [
         env.DB.prepare(
           'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
-        ).bind(inv.son_id, todayStr, 'deposit', balance, `Rückzahlung: ${inv.product_name} (inkl. Zinsen)`),
+        ).bind(inv.son_id, todayStr, 'deposit', inv.principal, `Rückzahlung Kapital: ${inv.product_name}`)
+      ];
+      if (grossInterest > 0) {
+        inserts.push(
+          env.DB.prepare(
+            'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+          ).bind(inv.son_id, todayStr, 'interest', grossInterest, `Zinsgutschrift: ${inv.product_name}`)
+        );
+      }
+      if (kestAccrued > 0) {
+        inserts.push(
+          env.DB.prepare(
+            'INSERT INTO transactions (son_id, date, type, amount, note) VALUES (?, ?, ?, ?, ?)'
+          ).bind(inv.son_id, todayStr, 'kest', kestAccrued, `KESt: ${inv.product_name}`)
+        );
+      }
+      inserts.push(
         env.DB.prepare(
-          "UPDATE investments SET status = 'paid_out', balance = ?, last_credit_date = ? WHERE id = ?"
-        ).bind(balance, todayStr, inv.id)
-      ]);
+          "UPDATE investments SET status = 'paid_out', balance = ?, kest_accrued = ?, last_credit_date = ? WHERE id = ?"
+        ).bind(balance, kestAccrued, todayStr, inv.id)
+      );
+      await env.DB.batch(inserts);
       continue;
     }
 
@@ -64,8 +89,8 @@ async function runInvestments(env) {
     if (elapsedDays < periodDays) continue; // noch keine volle Zinsperiode vergangen
 
     await env.DB.prepare(
-      'UPDATE investments SET balance = ?, last_credit_date = ? WHERE id = ?'
-    ).bind(balance, todayStr, inv.id).run();
+      'UPDATE investments SET balance = ?, kest_accrued = ?, last_credit_date = ? WHERE id = ?'
+    ).bind(balance, kestAccrued, todayStr, inv.id).run();
   }
 }
 
