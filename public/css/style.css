@@ -397,7 +397,7 @@ input, select {
   line-height: 1;
   letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--sage);
+  color: var(--rust);
 }
 
 .cashback-amount {
@@ -405,7 +405,7 @@ input, select {
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
-  color: var(--sage);
+  color: var(--rust);
   margin-left: auto;
   text-align: right;
 }
