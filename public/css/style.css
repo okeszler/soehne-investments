@@ -376,6 +376,7 @@ input, select {
 .cashback-eyebrow {
   font-family: var(--font-mono);
   font-size: 11px;
+  line-height: 1;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   color: var(--sage);
@@ -385,7 +386,7 @@ input, select {
   font-family: var(--font-display);
   font-size: 20px;
   font-weight: 600;
-  line-height: 1.15;
+  line-height: 1;
   color: var(--sage);
   margin-left: auto;
   text-align: right;
