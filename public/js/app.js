@@ -90,12 +90,11 @@ async function setupPush() {
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const chartAnimation = prefersReducedMotion ? false : { duration: 700, easing: 'easeOutQuart' };
 
-function animateNumber(el, to, formatFn) {
+function animateNumber(el, to, formatFn, duration = 600) {
   if (prefersReducedMotion) {
     el.textContent = formatFn(to);
     return;
   }
-  const duration = 600;
   const start = performance.now();
   let done = false;
   function finish() {
@@ -164,7 +163,7 @@ function showDashboard() {
 
   const cashbackCard = document.getElementById('cashback-card');
   if (currentData.lifetimeCashback > 0) {
-    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur);
+    animateNumber(document.getElementById('cashback-amount'), currentData.lifetimeCashback, eur, 2400);
     cashbackCard.style.display = 'flex';
   } else {
     cashbackCard.style.display = 'none';
