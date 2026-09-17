@@ -232,6 +232,24 @@ input, select {
 
 .logout-link:hover { opacity: 1; }
 
+.ledger-show-all {
+  display: block;
+  margin: 14px auto 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.06em;
+  background: transparent;
+  border: none;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  opacity: 0.85;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.ledger-show-all:hover { opacity: 1; }
+
 .header-actions {
   display: flex;
   align-items: center;
@@ -421,6 +439,25 @@ input, select {
   height: 1px;
   background: repeating-linear-gradient(90deg, var(--paper-line) 0 4px, transparent 4px 8px);
   opacity: 0.25;
+}
+
+summary.section-title {
+  cursor: pointer;
+  list-style: none;
+}
+
+summary.section-title::-webkit-details-marker {
+  display: none;
+}
+
+summary.section-title::before {
+  content: '▸';
+  font-size: 10px;
+  transition: transform 0.15s ease;
+}
+
+details[open] > summary.section-title::before {
+  transform: rotate(90deg);
 }
 
 canvas { max-width: 100%; }
