@@ -25,8 +25,12 @@
   --hero-fg: #F2FBF8;
   --hero-muted: #A9D2C8;
   --hero-chip: rgba(255,255,255,0.12);
+  --hero-bar-1: #8FE3CF;
+  --hero-bar-2: #F0BE5E;
+  --hero-up: #8FE3B8;
+  --hero-glow: rgba(240,190,94,.28);
   --shadow: 0 1px 2px rgba(16,35,31,.04), 0 8px 24px -12px rgba(16,35,31,.12);
-  --shadow-lg: 0 24px 60px -20px rgba(13,63,55,.45);
+  --shadow-lg: 0 24px 60px -20px color-mix(in srgb, var(--hero-a) 75%, transparent);
 
   --f-display: 'Bricolage Grotesque', 'Figtree', system-ui, sans-serif;
   --f-body: 'Figtree', system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -44,7 +48,6 @@
     --gold: #F0BE5E; --gold-soft: rgba(240,190,94,.13); --pos: #5DD39A; --neg: #F08A62; --neg-soft: rgba(240,138,98,.14);
     --hero-a: #123B33; --hero-b: #0F2B26; --hero-fg: #EAF7F3; --hero-muted: #93C5B8; --hero-chip: rgba(255,255,255,0.08);
     --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
-    --shadow-lg: 0 24px 60px -20px rgba(0,0,0,.7);
     color-scheme: dark;
   }
 }
@@ -54,7 +57,6 @@
   --gold: #F0BE5E; --gold-soft: rgba(240,190,94,.13); --pos: #5DD39A; --neg: #F08A62; --neg-soft: rgba(240,138,98,.14);
   --hero-a: #123B33; --hero-b: #0F2B26; --hero-fg: #EAF7F3; --hero-muted: #93C5B8; --hero-chip: rgba(255,255,255,0.08);
   --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 24px -12px rgba(0,0,0,.5);
-  --shadow-lg: 0 24px 60px -20px rgba(0,0,0,.7);
   color-scheme: dark;
 }
 
@@ -228,7 +230,7 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
 }
 .hero::before {
   content: ''; position: absolute; right: -80px; top: -90px; width: 260px; height: 260px; border-radius: 50%;
-  background: radial-gradient(circle, rgba(240,190,94,.28), transparent 65%); pointer-events: none;
+  background: radial-gradient(circle, var(--hero-glow), transparent 65%); pointer-events: none;
   animation: drift 12s ease-in-out infinite alternate;
 }
 .hero-top { display: flex; justify-content: space-between; align-items: center; color: var(--hero-muted); font-size: 13.5px; font-weight: 500; position: relative; }
@@ -244,12 +246,12 @@ h1, h2, h3 { font-family: var(--f-display); margin: 0; text-wrap: balance; lette
   transition: background-color .2s;
 }
 button.chip:hover { background: rgba(255,255,255,.2); }
-.chip .up { color: #8FE3B8; }
+.chip .up { color: var(--hero-up); }
 .split { margin-top: 20px; position: relative; }
 .split-bar { display: flex; height: 8px; border-radius: 8px; overflow: hidden; background: rgba(255,255,255,.1); gap: 3px; }
 .split-bar i { display: block; height: 100%; border-radius: 8px; transform-origin: left; animation: fill 1.1s var(--ease) .3s both; }
-.split-bar i:nth-child(1) { background: #8FE3CF; }
-.split-bar i:nth-child(2) { background: #F0BE5E; animation-delay: .45s; }
+.split-bar i:nth-child(1) { background: var(--hero-bar-1); }
+.split-bar i:nth-child(2) { background: var(--hero-bar-2); animation-delay: .45s; }
 .split-legend { display: flex; justify-content: space-between; gap: 12px; margin-top: 10px; font-size: 13px; color: var(--hero-muted); flex-wrap: wrap; }
 .split-legend b { display: block; color: var(--hero-fg); font-size: 15px; font-weight: 600; }
 .split-legend .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
@@ -418,7 +420,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 .switch[aria-checked="true"]::after { transform: translateX(18px); }
 
 /* ---------- Sheet & Toast ---------- */
-.scrim { position: fixed; inset: 0; z-index: 40; background: rgba(6,20,17,.45); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
+.scrim { position: fixed; inset: 0; z-index: 40; background: color-mix(in srgb, var(--hero-a) 55%, transparent); opacity: 0; pointer-events: none; transition: opacity .3s ease; }
 .scrim.open { opacity: 1; pointer-events: auto; }
 .sheet {
   position: fixed; z-index: 41; left: 0; right: 0; bottom: 0; max-height: 88vh; overflow: auto;
@@ -449,7 +451,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   font-weight: 600; font-size: 14px; box-shadow: var(--shadow-lg); transition: transform .4s var(--ease), opacity .3s ease; max-width: calc(100% - 32px);
 }
 .toast.show { transform: translate(-50%, 0); opacity: 1; visibility: visible; }
-.toast .check { width: 22px; height: 22px; border-radius: 50%; background: var(--pos); display: grid; place-items: center; color: #fff; flex: none; }
+.toast .check { width: 22px; height: 22px; border-radius: 50%; background: var(--brand); display: grid; place-items: center; color: var(--brand-ink); flex: none; }
 @media (min-width: 960px) { .toast { bottom: 32px; } }
 
 /* ---------- Animationen ---------- */
@@ -462,8 +464,8 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 @keyframes barUp { from { transform: scaleY(0); } to { transform: scaleY(1); } }
 @keyframes drift { from { transform: translate(0, 0); } to { transform: translate(-40px, 30px); } }
 @keyframes shake { 20%, 60% { transform: translateX(-8px); } 40%, 80% { transform: translateX(8px); } }
-@keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(143,227,184,.6); } 100% { box-shadow: 0 0 0 8px rgba(143,227,184,0); } }
-.live { width: 7px; height: 7px; border-radius: 50%; background: #8FE3B8; animation: pulse 2s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--hero-up) 60%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+.live { width: 7px; height: 7px; border-radius: 50%; background: var(--hero-up); animation: pulse 2s ease-out infinite; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
@@ -500,6 +502,26 @@ textarea.input { resize: vertical; min-height: 84px; }
 .notice-sm { padding: 12px; }
 .notice-sm .ico { width: 28px; height: 28px; }
 @media (max-width: 520px) { .cond-row { grid-template-columns: 1fr; } .suffix { width: 100%; } }
+
+/* ---------- Farbschemata (Grün = Basis oben) ---------- */
+:root[data-palette="blau"] { --bg: #F4F6FA; --surface: #FFFFFF; --surface-2: #EDF1F7; --ink: #121A2B; --muted: #5B6577; --line: #E1E6EF; --brand: #2B54C9; --brand-ink: #FFFFFF; --brand-soft: #E3EAFB; --pos: #2B54C9; --gold: #B4740C; --gold-soft: #FBEFD9; --neg: #B4441C; --neg-soft: #FBE7DF; --hero-a: #101A33; --hero-b: #213A78; --hero-fg: #F3F6FD; --hero-muted: #AFC0E6; --hero-bar-1: #9DB8FF; --hero-bar-2: #F2C46A; --hero-up: #A9C3FF; --hero-glow: rgba(242,196,106,.28); }
+:root[data-palette="pflaume"] { --bg: #F7F4F7; --surface: #FFFFFF; --surface-2: #F1EBF1; --ink: #24152B; --muted: #6B5D70; --line: #E9E1EA; --brand: #7B3F98; --brand-ink: #FFFFFF; --brand-soft: #F1E6F6; --pos: #7B3F98; --gold: #C0661E; --gold-soft: #FCEBDD; --neg: #B4441C; --neg-soft: #FBE7DF; --hero-a: #2A1436; --hero-b: #5A2C73; --hero-fg: #FBF5FD; --hero-muted: #D2B7DF; --hero-bar-1: #D9B3F0; --hero-bar-2: #FFB47A; --hero-up: #E8C7F7; --hero-glow: rgba(255,180,122,.3); }
+:root[data-palette="graphit"] { --bg: #F5F5F4; --surface: #FFFFFF; --surface-2: #EEEEEC; --ink: #18181B; --muted: #62626A; --line: #E4E4E1; --brand: #D24D29; --brand-ink: #FFFFFF; --brand-soft: #FBE6DF; --pos: #18181B; --gold: #A97A12; --gold-soft: #F8EED6; --neg: #6B6B73; --neg-soft: #EDEDEB; --hero-a: #17171A; --hero-b: #36363D; --hero-fg: #F7F7F5; --hero-muted: #B5B5BC; --hero-bar-1: #FF9C7E; --hero-bar-2: #F2C46A; --hero-up: #FFB39C; --hero-glow: rgba(255,140,105,.25); }
+:root[data-palette="bordeaux"] { --bg: #F8F5F4; --surface: #FFFFFF; --surface-2: #F2ECEA; --ink: #2A1418; --muted: #6E5A5E; --line: #EADFDD; --brand: #9B2242; --brand-ink: #FFFFFF; --brand-soft: #F7E3E8; --pos: #2A1418; --gold: #A97A12; --gold-soft: #F8EED6; --neg: #7A6A6D; --neg-soft: #EFE8E7; --hero-a: #3A0E1B; --hero-b: #6E1F35; --hero-fg: #FDF5F6; --hero-muted: #E0B4BF; --hero-bar-1: #F5A9BC; --hero-bar-2: #F0C565; --hero-up: #F8C3D0; --hero-glow: rgba(240,197,101,.28); }
+@media (prefers-color-scheme: dark) { :root[data-palette="blau"]:not([data-theme="light"]) { --bg: #0B0F1A; --surface: #121828; --surface-2: #19213A; --ink: #E7ECF7; --muted: #8F9AB3; --line: #222B44; --brand: #7FA2FF; --brand-ink: #0A1330; --brand-soft: rgba(127,162,255,.15); --pos: #7FA2FF; --gold: #F2C46A; --gold-soft: rgba(242,196,106,.13); --neg: #F08A62; --neg-soft: rgba(240,138,98,.14); --hero-a: #1B2B57; --hero-b: #0F1730; --hero-fg: #EEF2FD; --hero-muted: #9FB0D8; --hero-bar-1: #9DB8FF; --hero-bar-2: #F2C46A; --hero-up: #A9C3FF; --hero-glow: rgba(242,196,106,.22); } }
+:root[data-palette="blau"][data-theme="dark"] { --bg: #0B0F1A; --surface: #121828; --surface-2: #19213A; --ink: #E7ECF7; --muted: #8F9AB3; --line: #222B44; --brand: #7FA2FF; --brand-ink: #0A1330; --brand-soft: rgba(127,162,255,.15); --pos: #7FA2FF; --gold: #F2C46A; --gold-soft: rgba(242,196,106,.13); --neg: #F08A62; --neg-soft: rgba(240,138,98,.14); --hero-a: #1B2B57; --hero-b: #0F1730; --hero-fg: #EEF2FD; --hero-muted: #9FB0D8; --hero-bar-1: #9DB8FF; --hero-bar-2: #F2C46A; --hero-up: #A9C3FF; --hero-glow: rgba(242,196,106,.22); }
+@media (prefers-color-scheme: dark) { :root[data-palette="pflaume"]:not([data-theme="light"]) { --bg: #120C15; --surface: #1B1320; --surface-2: #241A2B; --ink: #F0E8F3; --muted: #A797AD; --line: #2F2338; --brand: #C79BE6; --brand-ink: #22102E; --brand-soft: rgba(199,155,230,.15); --pos: #C79BE6; --gold: #FFB47A; --gold-soft: rgba(255,180,122,.13); --neg: #F08A62; --neg-soft: rgba(240,138,98,.14); --hero-a: #3E2152; --hero-b: #1E1027; --hero-fg: #FBF5FD; --hero-muted: #C9AEDA; --hero-bar-1: #D9B3F0; --hero-bar-2: #FFB47A; --hero-up: #E8C7F7; --hero-glow: rgba(255,180,122,.22); } }
+:root[data-palette="pflaume"][data-theme="dark"] { --bg: #120C15; --surface: #1B1320; --surface-2: #241A2B; --ink: #F0E8F3; --muted: #A797AD; --line: #2F2338; --brand: #C79BE6; --brand-ink: #22102E; --brand-soft: rgba(199,155,230,.15); --pos: #C79BE6; --gold: #FFB47A; --gold-soft: rgba(255,180,122,.13); --neg: #F08A62; --neg-soft: rgba(240,138,98,.14); --hero-a: #3E2152; --hero-b: #1E1027; --hero-fg: #FBF5FD; --hero-muted: #C9AEDA; --hero-bar-1: #D9B3F0; --hero-bar-2: #FFB47A; --hero-up: #E8C7F7; --hero-glow: rgba(255,180,122,.22); }
+@media (prefers-color-scheme: dark) { :root[data-palette="graphit"]:not([data-theme="light"]) { --bg: #0E0E10; --surface: #17171A; --surface-2: #202024; --ink: #EDEDEF; --muted: #9A9AA3; --line: #2A2A30; --brand: #FF8A66; --brand-ink: #2A0E05; --brand-soft: rgba(255,138,102,.14); --pos: #EDEDEF; --gold: #F2C46A; --gold-soft: rgba(242,196,106,.13); --neg: #9A9AA3; --neg-soft: rgba(255,255,255,.06); --hero-a: #2A2A31; --hero-b: #121214; --hero-fg: #F7F7F5; --hero-muted: #A8A8B0; --hero-bar-1: #FF9C7E; --hero-bar-2: #F2C46A; --hero-up: #FFB39C; --hero-glow: rgba(255,140,105,.2); } }
+:root[data-palette="graphit"][data-theme="dark"] { --bg: #0E0E10; --surface: #17171A; --surface-2: #202024; --ink: #EDEDEF; --muted: #9A9AA3; --line: #2A2A30; --brand: #FF8A66; --brand-ink: #2A0E05; --brand-soft: rgba(255,138,102,.14); --pos: #EDEDEF; --gold: #F2C46A; --gold-soft: rgba(242,196,106,.13); --neg: #9A9AA3; --neg-soft: rgba(255,255,255,.06); --hero-a: #2A2A31; --hero-b: #121214; --hero-fg: #F7F7F5; --hero-muted: #A8A8B0; --hero-bar-1: #FF9C7E; --hero-bar-2: #F2C46A; --hero-up: #FFB39C; --hero-glow: rgba(255,140,105,.2); }
+@media (prefers-color-scheme: dark) { :root[data-palette="bordeaux"]:not([data-theme="light"]) { --bg: #140A0D; --surface: #1E1115; --surface-2: #28171C; --ink: #F3E9EB; --muted: #AC969B; --line: #34212A; --brand: #F08AA4; --brand-ink: #33091A; --brand-soft: rgba(240,138,164,.14); --pos: #F3E9EB; --gold: #F0C565; --gold-soft: rgba(240,197,101,.13); --neg: #AC969B; --neg-soft: rgba(255,255,255,.06); --hero-a: #4F1729; --hero-b: #220A12; --hero-fg: #FDF5F6; --hero-muted: #D4A5B1; --hero-bar-1: #F5A9BC; --hero-bar-2: #F0C565; --hero-up: #F8C3D0; --hero-glow: rgba(240,197,101,.2); } }
+:root[data-palette="bordeaux"][data-theme="dark"] { --bg: #140A0D; --surface: #1E1115; --surface-2: #28171C; --ink: #F3E9EB; --muted: #AC969B; --line: #34212A; --brand: #F08AA4; --brand-ink: #33091A; --brand-soft: rgba(240,138,164,.14); --pos: #F3E9EB; --gold: #F0C565; --gold-soft: rgba(240,197,101,.13); --neg: #AC969B; --neg-soft: rgba(255,255,255,.06); --hero-a: #4F1729; --hero-b: #220A12; --hero-fg: #FDF5F6; --hero-muted: #D4A5B1; --hero-bar-1: #F5A9BC; --hero-bar-2: #F0C565; --hero-up: #F8C3D0; --hero-glow: rgba(240,197,101,.2); }
+.logo svg { stroke: var(--hero-bar-2); }
+.proto-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; width: 100%; }
+.proto-row > span { margin-right: 4px; }
+.swatch { display: inline-flex; width: 14px; height: 14px; border-radius: 50%; overflow: hidden; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
+.swatch i { flex: 1; }
+.proto-btn.pal { display: inline-flex; align-items: center; gap: 7px; }
 </style>
 
 <!-- Prototyp-Steuerung (gehört nicht zur App) -->
@@ -513,12 +535,13 @@ textarea.input { resize: vertical; min-height: 84px; }
     <button class="proto-btn" id="p-theme">Hell / Dunkel</button>
     <button class="proto-btn" id="p-concept">Konzept</button>
   </div>
+  <div class="proto-row" id="proto-palettes"><span>Farbschema:</span></div>
 </div>
 
 <!-- ============ LOGIN ============ -->
 <section class="login" id="login" hidden>
   <div class="login-card">
-    <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F0BE5E" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>
+    <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>
     <div>
       <h1>Willkommen zurück</h1>
       <p>Gib deine PIN ein</p>
@@ -532,7 +555,7 @@ textarea.input { resize: vertical; min-height: 84px; }
 <!-- ============ APP ============ -->
 <div class="app" id="app">
   <aside class="side" aria-label="Navigation">
-    <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0BE5E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>Dein Kapital</div>
+    <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>Dein Kapital</div>
     <nav id="side-nav" style="display:grid;gap:4px;"></nav>
     <div class="side-foot"><strong id="side-name"></strong><span id="side-rate"></span></div>
   </aside>
@@ -570,8 +593,8 @@ textarea.input { resize: vertical; min-height: 84px; }
             <div class="split">
               <div class="split-bar" id="split-bar"><i></i><i></i></div>
               <div class="split-legend">
-                <span><span class="dot" style="background:#8FE3CF"></span>FLEX verfügbar<b class="num" id="flex-amt"></b></span>
-                <span style="text-align:right"><span class="dot" style="background:#F0BE5E"></span>Investiert<b class="num" id="inv-amt"></b></span>
+                <span><span class="dot" style="background:var(--hero-bar-1)"></span>FLEX verfügbar<b class="num" id="flex-amt"></b></span>
+                <span style="text-align:right"><span class="dot" style="background:var(--hero-bar-2)"></span>Investiert<b class="num" id="inv-amt"></b></span>
               </div>
             </div>
           </div>
@@ -887,11 +910,13 @@ textarea.input { resize: vertical; min-height: 84px; }
   // ---------- Hilfen ----------
   const $ = s => document.querySelector(s);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  function countUp(el, to, fmt, dur = 1400) {
+  // Schneller Start, langsames Auslaufen: in den ersten 20 % der Zeit sind schon 75 % des Betrags erreicht.
+  const easeOut = p => p >= 1 ? 1 : 1 - Math.pow(2, -10 * p);
+  function countUp(el, to, fmt, dur = 2200) {
     if (reduce) { el.textContent = fmt(to); return; }
     const t0 = performance.now();
     (function tick(now) {
-      const p = Math.min(1, (now - t0) / dur), e = 1 - Math.pow(1 - p, 4);
+      const p = Math.min(1, (now - t0) / dur), e = easeOut(p);
       el.textContent = fmt(to * e);
       if (p < 1) requestAnimationFrame(tick);
     })(t0);
@@ -919,6 +944,29 @@ textarea.input { resize: vertical; min-height: 84px; }
   }
   $('#sw-dark').setAttribute('aria-checked', isDark());
   ['#p-theme', '#theme-btn', '#sw-dark'].forEach(s => $(s).addEventListener('click', toggleTheme));
+
+
+  // ---------- Farbschema ----------
+  const palettes = [
+    ['blau', 'Nachtblau & Amber', ['#213A78', '#2B54C9', '#F2C46A']],
+    ['pflaume', 'Pflaume & Apricot', ['#5A2C73', '#7B3F98', '#FFB47A']],
+    ['graphit', 'Graphit & Koralle', ['#36363D', '#D24D29', '#F2C46A']],
+    ['bordeaux', 'Bordeaux & Gold', ['#6E1F35', '#9B2242', '#F0C565']],
+    ['gruen', 'Bisher (Grün)', ['#13594D', '#0E6A5D', '#F0BE5E']]
+  ];
+  let pal = 'blau';
+  try { pal = localStorage.getItem('palette') || 'blau'; } catch (e) {}
+  if (!palettes.some(x => x[0] === pal)) pal = 'blau';
+  $('#proto-palettes').insertAdjacentHTML('beforeend', palettes.map(([k, l, c]) =>
+    `<button class="proto-btn pal" data-pal="${k}" aria-pressed="false"><span class="swatch">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span>${l}</button>`).join(''));
+  function setPalette(k) {
+    pal = k;
+    if (k === 'gruen') delete root.dataset.palette; else root.dataset.palette = k;
+    document.querySelectorAll('[data-pal]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pal === k));
+    try { localStorage.setItem('palette', k); } catch (e) {}
+  }
+  $('#proto-palettes').addEventListener('click', e => { const b = e.target.closest('[data-pal]'); if (b) setPalette(b.dataset.pal); });
+  setPalette(pal);
 
   // ---------- Navigation ----------
   const icons = {
@@ -962,7 +1010,7 @@ textarea.input { resize: vertical; min-height: 84px; }
     if (reduce) { heroEl.innerHTML = heroFmt(liveTotal); return; }
     const t0 = performance.now(), to = D.total;
     (function tick(now) {
-      const p = Math.min(1, (now - t0) / 1600), e = 1 - Math.pow(1 - p, 4);
+      const p = Math.min(1, (now - t0) / 2400), e = easeOut(p);
       heroEl.innerHTML = heroFmt(to * e);
       if (p < 1) requestAnimationFrame(tick);
     })(t0);
@@ -1041,8 +1089,8 @@ textarea.input { resize: vertical; min-height: 84px; }
     const fmt = v => eur(v);
     if (animate) {
       countUp($('#today-int'), D.dailyInt, fmt);
-      countUp($('#s-interest'), D.totalInt, fmt, 1800);
-      countUp($('#s-cash'), D.totalCash, fmt, 1800);
+      countUp($('#s-interest'), D.totalInt, fmt, 2600);
+      countUp($('#s-cash'), D.totalCash, fmt, 2600);
     } else {
       $('#today-int').textContent = fmt(D.dailyInt); $('#s-interest').textContent = fmt(D.totalInt); $('#s-cash').textContent = fmt(D.totalCash);
     }
