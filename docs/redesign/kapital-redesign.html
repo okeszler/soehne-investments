@@ -522,6 +522,19 @@ textarea.input { resize: vertical; min-height: 84px; }
 .swatch { display: inline-flex; width: 14px; height: 14px; border-radius: 50%; overflow: hidden; flex: none; box-shadow: inset 0 0 0 1px rgba(0,0,0,.08); }
 .swatch i { flex: 1; }
 .proto-btn.pal { display: inline-flex; align-items: center; gap: 7px; }
+.palettes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.pal-opt {
+  text-align: left; border-radius: var(--r-md); border: 2px solid var(--line); background: var(--surface); padding: 8px 8px 10px;
+  display: grid; gap: 8px; transition: border-color .25s, transform .2s var(--ease), box-shadow .25s;
+}
+.pal-opt:hover { transform: translateY(-2px); }
+.pal-opt[aria-checked="true"] { border-color: var(--brand); box-shadow: 0 0 0 4px var(--brand-soft); }
+.pal-prev { height: 54px; border-radius: 10px; position: relative; overflow: hidden; display: flex; align-items: flex-end; padding: 8px; gap: 4px; }
+.pal-prev i { height: 5px; border-radius: 5px; display: block; }
+.pal-prev .dot { position: absolute; top: 8px; right: 8px; width: 18px; height: 18px; border-radius: 50%; display: grid; place-items: center; font-size: 11px; font-weight: 700; color: #fff; background: rgba(255,255,255,.22); opacity: 0; transform: scale(.6); transition: opacity .25s, transform .3s var(--ease); }
+.pal-opt[aria-checked="true"] .dot { opacity: 1; transform: none; }
+.pal-name { font-weight: 600; font-size: 13.5px; padding: 0 4px; }
+.card, .stat, .qa, .notice, .tabbar, .side, .input, .prod, .inv, .fchip { transition: background-color .35s ease, border-color .35s ease, color .35s ease; }
 </style>
 
 <!-- Prototyp-Steuerung (gehört nicht zur App) -->
@@ -535,7 +548,6 @@ textarea.input { resize: vertical; min-height: 84px; }
     <button class="proto-btn" id="p-theme">Hell / Dunkel</button>
     <button class="proto-btn" id="p-concept">Konzept</button>
   </div>
-  <div class="proto-row" id="proto-palettes"><span>Farbschema:</span></div>
 </div>
 
 <!-- ============ LOGIN ============ -->
@@ -716,8 +728,15 @@ textarea.input { resize: vertical; min-height: 84px; }
             <div class="set"><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></span><span><span class="t">Dunkles Design</span><br><span class="s">Folgt sonst dem System</span></span><button class="switch end" role="switch" aria-checked="false" aria-label="Dunkles Design" id="sw-dark"></button></div>
           </div>
         </div>
-        <div class="card" style="--i:1">
-          <button class="btn secondary" id="logout">Abmelden</button>
+        <div class="col">
+          <div class="card" style="--i:1">
+            <div class="card-head"><h2>Farbschema</h2></div>
+            <div class="palettes" id="palettes" role="radiogroup" aria-label="Farbschema"></div>
+            <div class="hint" style="margin-top:10px">Gilt nur für dich. Die anderen sehen ihr eigenes Farbschema.</div>
+          </div>
+          <div class="card" style="--i:2">
+            <button class="btn secondary" id="logout">Abmelden</button>
+          </div>
         </div>
       </div>
     </section>
@@ -847,6 +866,7 @@ textarea.input { resize: vertical; min-height: 84px; }
     }
   };
   let pk = 'moritz';
+  Object.keys(people).forEach(k => { people[k].palette = 'blau'; });
   const P = () => people[pk];
 
   // Buchungen, Verlauf und Kennzahlen einer Person berechnen.
@@ -910,17 +930,26 @@ textarea.input { resize: vertical; min-height: 84px; }
   // ---------- Hilfen ----------
   const $ = s => document.querySelector(s);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Schneller Start, langsames Auslaufen: in den ersten 20 % der Zeit sind schon 75 % des Betrags erreicht.
-  const easeOut = p => p >= 1 ? 1 : 1 - Math.pow(2, -10 * p);
-  function countUp(el, to, fmt, dur = 2200) {
-    if (reduce) { el.textContent = fmt(to); return; }
+  // Hochzählen: schneller Start, langsames Auslaufen (easeOutQuint).
+  // Pro Element läuft immer nur eine Animation; eine neue bricht die alte ab.
+  const easeOut = p => 1 - Math.pow(1 - p, 5);
+  const runs = new WeakMap();
+  function animateValue(el, to, render, dur) {
+    const id = (runs.get(el) || 0) + 1;
+    runs.set(el, id);
+    if (reduce) { render(to); return Promise.resolve(true); }
     const t0 = performance.now();
-    (function tick(now) {
-      const p = Math.min(1, (now - t0) / dur), e = easeOut(p);
-      el.textContent = fmt(to * e);
-      if (p < 1) requestAnimationFrame(tick);
-    })(t0);
+    return new Promise(done => {
+      (function tick(now) {
+        if (runs.get(el) !== id) return done(false);
+        // rAF-Zeitstempel kann vor t0 liegen: auf 0..1 klammern, sonst gibt es negative Werte
+        const p = Math.min(1, Math.max(0, (now - t0) / dur));
+        render(to * easeOut(p));
+        if (p < 1) requestAnimationFrame(tick); else done(true);
+      })(t0);
+    });
   }
+  const countUp = (el, to, fmt, dur = 2000) => animateValue(el, to, v => { el.textContent = fmt(v); }, dur);
   const heroFmt = v => { const [i, c] = v.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `€ ${i}<span class="cents">,${c}</span>`; };
   let toastTimer;
   function toast(msg) {
@@ -946,27 +975,30 @@ textarea.input { resize: vertical; min-height: 84px; }
   ['#p-theme', '#theme-btn', '#sw-dark'].forEach(s => $(s).addEventListener('click', toggleTheme));
 
 
-  // ---------- Farbschema ----------
+  // ---------- Farbschema (pro Person im Profil wählbar, Standard Nachtblau) ----------
   const palettes = [
-    ['blau', 'Nachtblau & Amber', ['#213A78', '#2B54C9', '#F2C46A']],
-    ['pflaume', 'Pflaume & Apricot', ['#5A2C73', '#7B3F98', '#FFB47A']],
-    ['graphit', 'Graphit & Koralle', ['#36363D', '#D24D29', '#F2C46A']],
-    ['bordeaux', 'Bordeaux & Gold', ['#6E1F35', '#9B2242', '#F0C565']],
-    ['gruen', 'Bisher (Grün)', ['#13594D', '#0E6A5D', '#F0BE5E']]
+    ['blau', 'Nachtblau', ['#101A33', '#213A78'], ['#9DB8FF', '#F2C46A']],
+    ['pflaume', 'Pflaume', ['#2A1436', '#5A2C73'], ['#D9B3F0', '#FFB47A']],
+    ['graphit', 'Graphit', ['#17171A', '#36363D'], ['#FF9C7E', '#F2C46A']],
+    ['bordeaux', 'Bordeaux', ['#3A0E1B', '#6E1F35'], ['#F5A9BC', '#F0C565']]
   ];
-  let pal = 'blau';
-  try { pal = localStorage.getItem('palette') || 'blau'; } catch (e) {}
-  if (!palettes.some(x => x[0] === pal)) pal = 'blau';
-  $('#proto-palettes').insertAdjacentHTML('beforeend', palettes.map(([k, l, c]) =>
-    `<button class="proto-btn pal" data-pal="${k}" aria-pressed="false"><span class="swatch">${c.map(x => `<i style="background:${x}"></i>`).join('')}</span>${l}</button>`).join(''));
-  function setPalette(k) {
-    pal = k;
-    if (k === 'gruen') delete root.dataset.palette; else root.dataset.palette = k;
-    document.querySelectorAll('[data-pal]').forEach(b => b.setAttribute('aria-pressed', b.dataset.pal === k));
-    try { localStorage.setItem('palette', k); } catch (e) {}
+  let savedPalettes = {};
+  try { savedPalettes = JSON.parse(localStorage.getItem('palettes') || '{}'); } catch (e) {}
+  function applyPalette(k) {
+    root.dataset.palette = palettes.some(x => x[0] === k) ? k : 'blau';
+    document.querySelectorAll('[data-pal]').forEach(b => b.setAttribute('aria-checked', b.dataset.pal === root.dataset.palette));
   }
-  $('#proto-palettes').addEventListener('click', e => { const b = e.target.closest('[data-pal]'); if (b) setPalette(b.dataset.pal); });
-  setPalette(pal);
+  $('#palettes').innerHTML = palettes.map(([k, l, bg, bars]) =>
+    `<button type="button" class="pal-opt" role="radio" data-pal="${k}" aria-checked="false">
+      <span class="pal-prev" style="background:linear-gradient(150deg, ${bg[1]}, ${bg[0]} 75%)"><i style="background:${bars[0]};flex:3"></i><i style="background:${bars[1]};flex:4"></i><span class="dot">✓</span></span>
+      <span class="pal-name">${l}</span></button>`).join('');
+  $('#palettes').addEventListener('click', e => {
+    const b = e.target.closest('[data-pal]'); if (!b) return;
+    P().palette = b.dataset.pal;
+    savedPalettes[pk] = b.dataset.pal;
+    try { localStorage.setItem('palettes', JSON.stringify(savedPalettes)); } catch (e) {}
+    applyPalette(b.dataset.pal);
+  });
 
   // ---------- Navigation ----------
   const icons = {
@@ -1005,19 +1037,16 @@ textarea.input { resize: vertical; min-height: 84px; }
   $('#today').textContent = dFmt(TODAY, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   let liveTotal = 0;
   const heroEl = $('#hero-amount');
+  let heroCounting = false;
   function startHero() {
     liveTotal = D.total;
-    if (reduce) { heroEl.innerHTML = heroFmt(liveTotal); return; }
-    const t0 = performance.now(), to = D.total;
-    (function tick(now) {
-      const p = Math.min(1, (now - t0) / 2400), e = easeOut(p);
-      heroEl.innerHTML = heroFmt(to * e);
-      if (p < 1) requestAnimationFrame(tick);
-    })(t0);
+    heroCounting = true;
+    animateValue(heroEl, D.total, v => { heroEl.innerHTML = heroFmt(v); }, 2200)
+      .then(finished => { if (finished) heroCounting = false; });
   }
-  // Live-Zinsen: der Betrag wächst sichtbar mit dem sekundengenauen Zins
+  // Live-Zinsen: der Betrag wächst sichtbar mit dem sekundengenauen Zins (erst nach dem Hochzählen)
   setInterval(() => {
-    if (currentView !== 'home' || $('#app').hidden) return;
+    if (heroCounting || currentView !== 'home' || $('#app').hidden) return;
     liveTotal += D.dailyInt / 86400 * 3;
     heroEl.innerHTML = heroFmt(liveTotal);
   }, 3000);
@@ -1089,10 +1118,10 @@ textarea.input { resize: vertical; min-height: 84px; }
     const fmt = v => eur(v);
     if (animate) {
       countUp($('#today-int'), D.dailyInt, fmt);
-      countUp($('#s-interest'), D.totalInt, fmt, 2600);
-      countUp($('#s-cash'), D.totalCash, fmt, 2600);
+      countUp($('#s-interest'), D.totalInt, fmt, 2400);
+      countUp($('#s-cash'), D.totalCash, fmt, 2400);
     } else {
-      $('#today-int').textContent = fmt(D.dailyInt); $('#s-interest').textContent = fmt(D.totalInt); $('#s-cash').textContent = fmt(D.totalCash);
+      [['#today-int', D.dailyInt], ['#s-interest', D.totalInt], ['#s-cash', D.totalCash]].forEach(([sel, v]) => animateValue($(sel), v, x => { $(sel).textContent = fmt(x); }, 0));
     }
 
     $('#inv-list').innerHTML = D.invs.length ? D.invs.map(inv => `
@@ -1412,6 +1441,7 @@ textarea.input { resize: vertical; min-height: 84px; }
     pk = k;
     document.querySelectorAll('#proto-people [data-person]').forEach(b => b.setAttribute('aria-pressed', b.dataset.person === k));
     renderPerson();
+    if ($('#admin').hidden) applyPalette(P().palette);
     if (!$('#admin').hidden) renderAdmin();
     if (!$('#app').hidden && currentView === 'home') startHero();
   }
@@ -1445,6 +1475,7 @@ textarea.input { resize: vertical; min-height: 84px; }
   function setMode(m) {
     $('#login').hidden = m !== 'login'; $('#app').hidden = m !== 'app'; $('#admin').hidden = m !== 'admin';
     document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
+    applyPalette(m === 'admin' ? 'blau' : P().palette);
     if (m === 'login') {
       $('#login-hint').textContent = `Demo (${P().name}): beliebige 4 Ziffern, „0000“ zeigt den Fehlerzustand`;
       const card = $('.login-card'); card.style.animation = 'none'; void card.offsetHeight; card.style.animation = '';
@@ -1458,6 +1489,8 @@ textarea.input { resize: vertical; min-height: 84px; }
   document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
   // Start
+  Object.keys(people).forEach(k => { if (savedPalettes[k]) people[k].palette = savedPalettes[k]; });
+  applyPalette(P().palette);
   renderPerson(); go('home'); startHero(); requestAnimationFrame(() => placePill(seg));
 })();
 </script>
