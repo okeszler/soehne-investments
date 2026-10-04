@@ -67,7 +67,7 @@ body {
   -webkit-font-smoothing: antialiased;
   transition: background-color .3s ease, color .3s ease;
 }
-button, input, select { font: inherit; color: inherit; }
+button, input, select, textarea { font: inherit; color: inherit; }
 button { cursor: pointer; border: 0; background: none; }
 :focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 8px; }
 .num { font-variant-numeric: tabular-nums; }
@@ -468,14 +468,48 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; transition-duration: .01ms !important; }
 }
+/* ---------- Personen-Umschalter & Admin ---------- */
+.proto-group { display: inline-flex; gap: 4px; padding-left: 6px; margin-left: 2px; border-left: 1px solid var(--line); }
+.stats .stat.full { grid-column: 1 / -1; }
+.admin { max-width: 1120px; margin: 0 auto; padding: 28px 16px 60px; }
+@media (min-width: 960px) { .admin { padding: 36px 40px 60px; } }
+.people { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+.person {
+  display: flex; align-items: center; gap: 10px; padding: 8px 14px 8px 8px; border-radius: 999px; background: var(--surface);
+  box-shadow: var(--shadow); border: 2px solid transparent; transition: border-color .25s, transform .2s var(--ease);
+}
+.person:hover { transform: translateY(-1px); }
+.person[aria-pressed="true"] { border-color: var(--brand); }
+.avatar { width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 13px; background: var(--brand-soft); color: var(--brand); flex: none; }
+.person .pn { font-weight: 600; font-size: 14px; line-height: 1.2; text-align: left; }
+.person .pb { font-size: 12px; color: var(--muted); }
+.cond-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--line); }
+.cond-row:first-of-type { padding-top: 0; }
+.cond-row .t { font-weight: 600; }
+.cond-row .s { font-size: 12.5px; color: var(--muted); }
+.suffix { position: relative; width: 120px; }
+.suffix .input { padding-right: 34px; text-align: right; }
+.suffix span { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); font-weight: 600; pointer-events: none; }
+.input:disabled { opacity: .45; }
+.cond-ctl { display: flex; align-items: center; gap: 10px; }
+.hist { margin-top: 14px; display: grid; gap: 6px; font-size: 12.5px; color: var(--muted); }
+.hist div { display: flex; justify-content: space-between; gap: 12px; }
+.hist .new { color: var(--brand); font-weight: 600; animation: rise .5s var(--ease) both; }
+textarea.input { resize: vertical; min-height: 84px; }
+.preview-label { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+.notice-sm { padding: 12px; }
+.notice-sm .ico { width: 28px; height: 28px; }
+@media (max-width: 520px) { .cond-row { grid-template-columns: 1fr; } .suffix { width: 100%; } }
 </style>
 
 <!-- Prototyp-Steuerung (gehört nicht zur App) -->
 <div class="proto">
   <span><strong>Redesign-Vorschlag</strong> · klickbarer Prototyp mit Beispieldaten</span>
   <div class="proto-actions">
-    <button class="proto-btn" id="p-login" aria-pressed="false">Login</button>
-    <button class="proto-btn" id="p-app" aria-pressed="true">App</button>
+    <button class="proto-btn" data-mode="login" aria-pressed="false">Login</button>
+    <button class="proto-btn" data-mode="app" aria-pressed="true">App</button>
+    <button class="proto-btn" data-mode="admin" aria-pressed="false">Admin</button>
+    <span class="proto-group" id="proto-people"></span>
     <button class="proto-btn" id="p-theme">Hell / Dunkel</button>
     <button class="proto-btn" id="p-concept">Konzept</button>
   </div>
@@ -491,7 +525,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     </div>
     <div class="pin-dots" id="pin-dots"><span></span><span></span><span></span><span></span></div>
     <div class="keypad" id="keypad"></div>
-    <div class="login-hint" id="login-hint">Demo: beliebige 4 Ziffern, „0000“ zeigt den Fehlerzustand</div>
+    <div class="login-hint" id="login-hint"></div>
   </div>
 </section>
 
@@ -500,15 +534,15 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   <aside class="side" aria-label="Navigation">
     <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F0BE5E" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>Dein Kapital</div>
     <nav id="side-nav" style="display:grid;gap:4px;"></nav>
-    <div class="side-foot"><strong>Moritz</strong>FLEX-Zins 3,00 % p.a.</div>
+    <div class="side-foot"><strong id="side-name"></strong><span id="side-rate"></span></div>
   </aside>
 
   <main class="main">
     <!-- ÜBERSICHT -->
-    <section class="view active" id="v-home" data-title="Übersicht">
+    <section class="view active" id="v-home">
       <header class="top">
         <div>
-          <h1 id="greet">Hallo Moritz</h1>
+          <h1 id="greet"></h1>
           <div class="date" id="today"></div>
         </div>
         <div class="top-actions">
@@ -517,11 +551,11 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
         </div>
       </header>
 
-      <div class="grid two stagger">
+      <div class="grid two stagger" id="home-grid">
         <div class="col">
           <div class="notice" id="notice" style="--i:0">
             <div class="ico"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
-            <div><b>Nachricht von Papi</b><span>Dein Taschengeld für Oktober ist da. Gut gemacht, dass du letzten Monat nichts abgehoben hast!</span></div>
+            <div><b id="notice-from"></b><span id="notice-text"></span></div>
             <button class="x" id="notice-x" aria-label="Nachricht schließen">✕</button>
           </div>
 
@@ -530,9 +564,9 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
             <div class="hero-amount" id="hero-amount" aria-live="off">€ 0</div>
             <div class="hero-chips">
               <span class="chip"><span class="up">▲</span> <span class="num" id="today-int">€ 0,00</span> Zinsen heute</span>
-              <button class="chip" id="kest-btn" aria-expanded="false">KESt-frei <span aria-hidden="true">ⓘ</span></button>
+              <button class="chip" id="kest-btn" aria-expanded="false"><span id="kest-label">KESt-frei</span> <span aria-hidden="true">ⓘ</span></button>
             </div>
-            <div class="explain" id="kest-explain"><div><p>Banken in Österreich behalten 25 % deiner Zinsen als Kapitalertragssteuer ein. Papi übernimmt diese Steuer für dich. Bei deinem FLEX-Zins von 3,00 % würde eine Bank dir effektiv nur 2,25 % auszahlen.</p></div></div>
+            <div class="explain" id="kest-explain"><div><p id="kest-text"></p></div></div>
             <div class="split">
               <div class="split-bar" id="split-bar"><i></i><i></i></div>
               <div class="split-legend">
@@ -570,9 +604,9 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 
         <div class="col">
           <div class="stats" style="--i:2">
-            <div class="stat gold"><div class="label">Zinsen seit Start</div><div class="value num" id="s-interest">€ 0</div><div class="sub">steuerfrei gutgeschrieben</div></div>
-            <div class="stat gold"><div class="label">Cashback gesamt</div><div class="value num" id="s-cash">€ 0</div><div class="sub">3 % auf Curve-Zahlungen</div></div>
-            <div class="stat wide"><div><div class="label">Nächste Zinsgutschrift</div><div class="sub">FLEX · am 1. November</div></div><div class="value num" style="font-size:18px">≈ € 5,91</div></div>
+            <div class="stat gold" id="stat-interest"><div class="label">Zinsen seit Start</div><div class="value num" id="s-interest">€ 0</div><div class="sub" id="s-interest-sub"></div></div>
+            <div class="stat gold" id="stat-cash"><div class="label">Cashback gesamt</div><div class="value num" id="s-cash">€ 0</div><div class="sub" id="s-cash-sub"></div></div>
+            <div class="stat wide"><div><div class="label">Nächste Zinsgutschrift</div><div class="sub" id="next-sub"></div></div><div class="value num" style="font-size:18px" id="next-int"></div></div>
           </div>
 
           <div class="card" style="--i:3">
@@ -584,7 +618,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     </section>
 
     <!-- ANLEGEN -->
-    <section class="view" id="v-invest" data-title="Anlegen">
+    <section class="view" id="v-invest">
       <header class="top"><div><h1>Geld anlegen</h1><div class="date">Wähle ein Produkt und einen Betrag</div></div></header>
       <div class="grid two stagger">
         <div class="col">
@@ -609,8 +643,8 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     </section>
 
     <!-- KONTO -->
-    <section class="view" id="v-account" data-title="Konto">
-      <header class="top"><div><h1>FLEX-Konto</h1><div class="date">Kontostand <b class="num" id="acc-bal" style="color:var(--ink)"></b> · 3,00 % p.a.</div></div></header>
+    <section class="view" id="v-account">
+      <header class="top"><div><h1>FLEX-Konto</h1><div class="date">Kontostand <b class="num" id="acc-bal" style="color:var(--ink)"></b> · <span id="acc-rate"></span></div></div></header>
       <div class="card">
         <div class="filters" id="filters"></div>
         <div class="tx-list" id="tx-all"></div>
@@ -618,7 +652,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     </section>
 
     <!-- RECHNER -->
-    <section class="view" id="v-calc" data-title="Rechner">
+    <section class="view" id="v-calc">
       <header class="top"><div><h1>Zinseszinsrechner</h1><div class="date">Was wird aus deinem Geld?</div></div></header>
       <div class="grid two stagger">
         <div class="col">
@@ -648,12 +682,12 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     </section>
 
     <!-- PROFIL -->
-    <section class="view" id="v-profile" data-title="Profil">
-      <header class="top"><div><h1>Profil</h1><div class="date">Moritz · seit März 2025 dabei</div></div></header>
+    <section class="view" id="v-profile">
+      <header class="top"><div><h1>Profil</h1><div class="date" id="profile-sub"></div></div></header>
       <div class="grid two stagger">
         <div class="card" style="--i:0">
           <div class="settings">
-            <button class="set" data-sheet="payout"><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg></span><span><span class="t">Auszahlung beantragen</span><br><span class="s">Papi bekommt eine Benachrichtigung</span></span><span class="end">›</span></button>
+            <button class="set" data-sheet="payout"><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg></span><span><span class="t">Auszahlung beantragen</span><br><span class="s" id="payout-sub"></span></span><span class="end">›</span></button>
             <button class="set" data-sheet="pin"><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span><span class="t">PIN ändern</span><br><span class="s">4–6 Ziffern</span></span><span class="end">›</span></button>
             <div class="set"><span class="tx-ic int"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></span><span><span class="t">Benachrichtigungen</span><br><span class="s">Bei Gutschriften und Nachrichten</span></span><button class="switch end" role="switch" aria-checked="true" aria-label="Benachrichtigungen" id="sw-push"></button></div>
             <div class="set"><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></span><span><span class="t">Dunkles Design</span><br><span class="s">Folgt sonst dem System</span></span><button class="switch end" role="switch" aria-checked="false" aria-label="Dunkles Design" id="sw-dark"></button></div>
@@ -669,6 +703,74 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
 </div>
 
+<!-- ============ ADMIN ============ -->
+<div class="admin" id="admin" hidden>
+  <header class="top">
+    <div><h1>Verwaltung</h1><div class="date">Konditionen, Buchungen und Nachrichten pro Person</div></div>
+  </header>
+  <div class="people" id="admin-people"></div>
+
+  <div class="grid two stagger" id="admin-grid">
+    <div class="col">
+      <div class="card" style="--i:0">
+        <div class="card-head"><h2 id="cond-title">Konditionen</h2></div>
+        <form id="cond-form">
+          <div class="cond-row">
+            <div><div class="t">FLEX-Zinssatz</div><div class="s">Gilt ab heute. Bereits gutgeschriebene Zinsen bleiben unverändert.</div></div>
+            <div class="suffix"><input class="input num" id="a-flex" type="number" min="0" max="20" step="0.05" aria-label="FLEX-Zinssatz in Prozent"><span>%</span></div>
+          </div>
+          <div class="cond-row">
+            <div><div class="t">Cashback auf Curve-Zahlungen</div><div class="s">Ausgeschaltet: kein Cashback und keine Cashback-Anzeige in der App.</div></div>
+            <div class="cond-ctl">
+              <button type="button" class="switch" role="switch" aria-checked="false" aria-label="Cashback aktiv" id="a-cb-on"></button>
+              <div class="suffix"><input class="input num" id="a-cb" type="number" min="0" max="20" step="0.5" aria-label="Cashback in Prozent"><span>%</span></div>
+            </div>
+          </div>
+          <div class="cond-row">
+            <div><div class="t">Kapitalertragssteuer</div><div class="s">0 % bedeutet: du übernimmst die Steuer, die App zeigt „KESt-frei“.</div></div>
+            <select class="input" id="a-kest" style="width:120px" aria-label="KESt-Satz"><option value="0">0 %</option><option value="0.25">25 %</option><option value="0.275">27,5 %</option></select>
+          </div>
+          <div class="cond-row" style="border-bottom:0">
+            <div><div class="t">Absender in der App</div><div class="s">So heißt du in Nachrichten und Hinweisen. Leer lassen für neutrale Texte.</div></div>
+            <input class="input" id="a-sender" maxlength="30" placeholder="z. B. Papi" style="width:160px" aria-label="Absendername">
+          </div>
+          <button class="btn" type="submit">Konditionen speichern</button>
+        </form>
+        <div class="hist" id="cond-hist"></div>
+      </div>
+    </div>
+
+    <div class="col">
+      <div class="card" style="--i:1">
+        <div class="card-head"><h2>Neue FLEX-Buchung</h2></div>
+        <form class="form" id="tx-form">
+          <div class="row2">
+            <div class="field"><label for="a-tx-date">Datum</label><input class="input" id="a-tx-date" type="date"></div>
+            <div class="field"><label for="a-tx-type">Art</label><select class="input" id="a-tx-type"></select></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="a-tx-amt">Betrag (€)</label><input class="input num" id="a-tx-amt" type="number" min="0.01" step="0.01" required></div>
+            <div class="field"><label for="a-tx-note">Notiz</label><input class="input" id="a-tx-note" placeholder="optional"></div>
+          </div>
+          <div class="hint" id="a-tx-hint"></div>
+          <button class="btn" type="submit">Buchung speichern</button>
+        </form>
+      </div>
+
+      <div class="card" style="--i:2">
+        <div class="card-head"><h2>Nachricht senden</h2></div>
+        <form class="form" id="msg-form">
+          <div class="field"><label for="a-msg-to">An</label><select class="input" id="a-msg-to"></select></div>
+          <div class="field"><label for="a-msg">Nachricht</label><textarea class="input" id="a-msg" maxlength="500">Schön, dass du diesen Monat so fleißig gespart hast!</textarea></div>
+          <div class="preview-label">Vorschau in der App</div>
+          <div class="notice notice-sm" id="msg-preview"></div>
+          <button class="btn" type="submit">Senden</button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Sheets -->
 <div class="scrim" id="scrim"></div>
 <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="grab"></div><div id="sheet-body"></div></div>
@@ -677,64 +779,110 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 <script>
 (function () {
   // ---------- Beispieldaten ----------
+  // Alle personenbezogenen Texte (Absender, KESt, Cashback) kommen aus diesen Einstellungen,
+  // die im Admin-Bereich änderbar sind. Nichts davon ist im Text fest verdrahtet.
   const TODAY = new Date(2026, 9, 4);
-  const FLEX_RATE = 0.03;
   const eur = (v, d = 2) => '€ ' + v.toLocaleString('de-AT', { minimumFractionDigits: d, maximumFractionDigits: d });
+  const pct = (v, d = 2) => (v * 100).toLocaleString('de-AT', { minimumFractionDigits: d, maximumFractionDigits: d }) + ' %';
   const dFmt = (d, o = { day: 'numeric', month: 'short' }) => d.toLocaleDateString('de-AT', o);
   const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
-  const products = [
-    { id: 1, name: 'Tagesgeld FLEX', apy: 0.03, lock: 0, freq: 'monatlich', desc: 'Jederzeit verfügbar. Zinsen kommen jeden Monat dazu.' },
-    { id: 2, name: 'Festgeld 6 Monate', apy: 0.035, lock: 182, freq: 'endfällig', desc: 'Etwas mehr Zinsen, dafür ist das Geld ein halbes Jahr fest.' },
-    { id: 3, name: 'Festgeld 12 Monate', apy: 0.04, lock: 365, freq: 'endfällig', desc: 'Ein Jahr fest angelegt. Zinsen bekommst du am Ende auf einmal.' },
-    { id: 4, name: 'P2P-Kredite', apy: 0.06, lock: 730, freq: 'vierteljährlich', desc: 'Du leihst Geld an viele kleine Kreditnehmer. Höherer Zins, zwei Jahre Bindung.' }
-  ];
-  const investments = [
-    { name: 'Festgeld 12 Monate', principal: 1000, apy: 0.04, start: new Date(2026, 1, 15), days: 365 },
-    { name: 'P2P-Kredite', principal: 500, apy: 0.06, start: new Date(2025, 10, 1), days: 730 }
-  ];
-  investments.forEach(inv => {
-    const elapsed = (TODAY - inv.start) / 864e5;
-    inv.progress = Math.min(1, elapsed / inv.days);
-    inv.remaining = Math.max(0, Math.round(inv.days - elapsed));
-    inv.current = inv.principal * Math.pow(1 + inv.apy, elapsed / 365);
-    inv.maturity = inv.principal * Math.pow(1 + inv.apy, inv.days / 365);
-  });
-
-  // FLEX-Buchungen: monatliches Taschengeld, Zinsen, Curve-Zahlungen, Auszahlungen
-  const txs = [];
-  const start = new Date(2025, 2, 1);
-  for (let m = 0; m < 20; m++) {
-    const d = new Date(start.getFullYear(), start.getMonth() + m, 1);
-    if (d > TODAY) break;
-    txs.push({ date: d, type: 'in', title: 'Taschengeld', amount: 50 });
-    if (m > 0) txs.push({ date: d, type: 'int', title: 'Zinsgutschrift', amount: 0 });
-    if (m === 0) txs.push({ date: addDays(d, 2), type: 'in', title: 'Geburtstagsgeld Oma', amount: 1500 });
-    if (m === 8) txs.push({ date: addDays(d, 12), type: 'in', title: 'Ferialjob', amount: 900 });
-    if (m % 3 === 1) txs.push({ date: addDays(d, 9), type: 'cash', title: 'Curve-Zahlung · Sportgeschäft', amount: -64.9, cashback: 1.95 });
-    if (m % 4 === 2) txs.push({ date: addDays(d, 17), type: 'out', title: 'Auszahlung · Konzertkarten', amount: -85 });
-    if (m === 7) txs.push({ date: addDays(d, 0), type: 'out', title: 'P2P-Kredite angelegt', amount: -500 });
-    if (m === 11) txs.push({ date: addDays(d, 14), type: 'out', title: 'Festgeld 12 Monate angelegt', amount: -1000 });
-  }
-  txs.sort((a, b) => a.date - b.date);
-  // Zinsen aus laufendem Saldo nachrechnen, Verlauf als Tagesreihe
-  const history = [];
-  let bal = 0, totalInt = 0, totalCash = 0, ti = 0;
-  for (let d = new Date(start); d <= TODAY; d = addDays(d, 1)) {
-    while (ti < txs.length && txs[ti].date <= d) {
-      const t = txs[ti];
-      if (t.type === 'int') { t.amount = Math.round(bal * FLEX_RATE / 12 * 100) / 100; totalInt += t.amount; }
-      if (t.type === 'cash') { bal += t.cashback; totalCash += t.cashback; }
-      bal += t.amount; ti++;
+  const people = {
+    moritz: {
+      name: 'Moritz', since: new Date(2025, 2, 1), flexRate: 0.03, cashbackRate: 0.03, kestRate: 0, sender: 'Papi',
+      message: 'Dein Taschengeld für Oktober ist da. Gut gemacht, dass du letzten Monat nichts abgehoben hast!',
+      rateHist: [{ d: new Date(2025, 2, 1), t: 'FLEX 3,00 % · Cashback 3,0 %' }],
+      monthly: 50, monthlyTitle: 'Taschengeld',
+      extra: [[0, 2, 'in', 'Geburtstagsgeld Oma', 1500], [8, 12, 'in', 'Ferialjob', 900], [7, 0, 'out', 'P2P-Kredite angelegt', -500], [11, 14, 'out', 'Festgeld 12 Monate angelegt', -1000]],
+      curve: m => m % 3 === 1 ? [9, 'Sportgeschäft', 64.9] : null,
+      payouts: m => m % 4 === 2 ? [17, 'Konzertkarten', -85] : null,
+      investments: [
+        { name: 'Festgeld 12 Monate', principal: 1000, apy: 0.04, start: new Date(2026, 1, 15), days: 365 },
+        { name: 'P2P-Kredite', principal: 500, apy: 0.06, start: new Date(2025, 10, 1), days: 730 }
+      ]
+    },
+    florian: {
+      name: 'Florian', since: new Date(2025, 2, 1), flexRate: 0.03, cashbackRate: 0, kestRate: 0, sender: 'Papi',
+      message: 'Die Zinsen für September sind gutgeschrieben. Schau mal in deinen Verlauf!',
+      rateHist: [{ d: new Date(2025, 2, 1), t: 'FLEX 3,00 % · kein Cashback' }],
+      monthly: 40, monthlyTitle: 'Taschengeld',
+      extra: [[0, 3, 'in', 'Geburtstagsgeld Oma', 1200], [6, 20, 'in', 'Zeugnisgeld', 100], [9, 5, 'out', 'Festgeld 6 Monate angelegt', -600]],
+      curve: () => null,
+      payouts: m => m % 5 === 3 ? [11, 'Videospiel', -59.99] : null,
+      investments: [{ name: 'Festgeld 6 Monate', principal: 600, apy: 0.035, start: new Date(2026, 5, 6), days: 182 }]
+    },
+    andreea: {
+      name: 'Andreea', since: new Date(2025, 8, 1), flexRate: 0.025, cashbackRate: 0, kestRate: 0.25, sender: '',
+      message: 'Dein Festgeld läuft seit Jänner. Die Zinsen kommen gesammelt am Ende der Laufzeit.',
+      rateHist: [{ d: new Date(2025, 8, 1), t: 'FLEX 2,50 % · kein Cashback · KESt 25 %' }],
+      monthly: 100, monthlyTitle: 'Sparplan',
+      extra: [[0, 1, 'in', 'Ersteinzahlung', 3000], [4, 10, 'out', 'Festgeld 12 Monate angelegt', -2000]],
+      curve: () => null,
+      payouts: m => m === 10 ? [8, 'Urlaub', -250] : null,
+      investments: [{ name: 'Festgeld 12 Monate', principal: 2000, apy: 0.04, start: new Date(2026, 0, 10), days: 365 }]
     }
-    const invVal = investments.reduce((s, inv) => d >= inv.start ? s + inv.principal * Math.pow(1 + inv.apy, (d - inv.start) / 864e5 / 365) : s, 0);
-    history.push({ d, v: bal + invVal });
+  };
+  let pk = 'moritz';
+  const P = () => people[pk];
+
+  // Buchungen, Verlauf und Kennzahlen einer Person berechnen.
+  // Historische Zinsen/Cashback nutzen die Sätze zum Zeitpunkt der Buchung (rate0/cb0), nicht die aktuell eingestellten.
+  function build(p) {
+    if (p.rate0 == null) { p.rate0 = p.flexRate; p.cb0 = p.cashbackRate; }
+    const txs = [];
+    for (let m = 0; m < 24; m++) {
+      const d = new Date(p.since.getFullYear(), p.since.getMonth() + m, 1);
+      if (d > TODAY) break;
+      txs.push({ date: d, type: 'in', title: p.monthlyTitle, amount: p.monthly });
+      if (m > 0) txs.push({ date: d, type: 'int', title: 'Zinsgutschrift', amount: 0 });
+      p.extra.filter(e => e[0] === m).forEach(e => txs.push({ date: addDays(d, e[1]), type: e[2], title: e[3], amount: e[4] }));
+      const c = p.curve(m);
+      if (c && p.cb0 > 0) txs.push({ date: addDays(d, c[0]), type: 'cash', title: 'Curve-Zahlung · ' + c[1], amount: -c[2], cashback: Math.round(c[2] * p.cb0 * 100) / 100 });
+      const o = p.payouts(m);
+      if (o) txs.push({ date: addDays(d, o[0]), type: 'out', title: 'Auszahlung · ' + o[1], amount: o[2] });
+    }
+    txs.sort((a, b) => a.date - b.date);
+    const invs = p.investments.map(inv => {
+      const elapsed = (TODAY - inv.start) / 864e5;
+      const gross = v => inv.principal + (v - inv.principal) * (1 - p.kestRate);
+      return { ...inv,
+        progress: Math.min(1, elapsed / inv.days), remaining: Math.max(0, Math.round(inv.days - elapsed)),
+        current: gross(inv.principal * Math.pow(1 + inv.apy, elapsed / 365)),
+        maturity: gross(inv.principal * Math.pow(1 + inv.apy, inv.days / 365)) };
+    });
+    const history = [];
+    const out = [];
+    let bal = 0, totalInt = 0, totalCash = 0, ti = 0;
+    for (let d = new Date(p.since); d <= TODAY; d = addDays(d, 1)) {
+      while (ti < txs.length && txs[ti].date <= d) {
+        const t = txs[ti++];
+        if (t.type === 'int') {
+          t.amount = Math.round(bal * p.rate0 / 12 * 100) / 100;
+          totalInt += t.amount; bal += t.amount; out.push(t);
+          if (p.kestRate > 0) {
+            const k = { date: t.date, type: 'kest', title: 'KESt ' + pct(p.kestRate, 1).replace(',0', ''), amount: -Math.round(t.amount * p.kestRate * 100) / 100 };
+            totalInt += k.amount; bal += k.amount; out.push(k);
+          }
+          continue;
+        }
+        if (t.type === 'cash') { bal += t.cashback; totalCash += t.cashback; }
+        bal += t.amount; out.push(t);
+      }
+      const invVal = p.investments.reduce((s, inv) => d >= inv.start ? s + inv.principal * Math.pow(1 + inv.apy, (d - inv.start) / 864e5 / 365) : s, 0);
+      history.push({ d, v: bal + invVal });
+    }
+    const flex = bal;
+    const invested = invs.reduce((s, i) => s + i.current, 0);
+    const net = 1 - p.kestRate;
+    return {
+      txs: out, invs, history, flex, invested, total: flex + invested,
+      totalInt: totalInt + invs.reduce((s, i) => s + i.current - i.principal, 0), totalCash,
+      dailyInt: (flex * p.flexRate / 365 + invs.reduce((s, i) => s + i.current * i.apy / 365, 0)) * net,
+      nextCredit: flex * p.flexRate / 12 * net
+    };
   }
-  const flex = bal;
-  const invested = investments.reduce((s, i) => s + i.current, 0);
-  const total = flex + invested;
-  const invInterest = investments.reduce((s, i) => s + i.current - i.principal, 0);
-  const dailyInt = flex * FLEX_RATE / 365 + investments.reduce((s, i) => s + i.current * i.apy / 365, 0);
+  let D = build(P());
 
   // ---------- Hilfen ----------
   const $ = s => document.querySelector(s);
@@ -756,6 +904,9 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => $('#toast').classList.remove('show'), 2600);
   }
+  const senderLine = p => p.sender ? `Nachricht von ${esc(p.sender)}` : 'Neue Nachricht';
+  const payoutInfo = p => p.sender ? `${esc(p.sender)} bekommt sofort eine Benachrichtigung` : 'Dein Antrag wird sofort weitergeleitet';
+  const payoutDone = p => p.sender ? `Antrag gesendet, ${p.sender} wurde informiert` : 'Antrag gesendet';
 
   // ---------- Theme ----------
   const root = document.documentElement;
@@ -782,11 +933,16 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   $('#tabbar').innerHTML = navHtml;
   $('#side-nav').innerHTML = navHtml;
 
+  let currentView = 'home';
   function go(k) {
-    document.querySelectorAll('.view').forEach(v => v.classList.toggle('active', v.id === 'v-' + k));
+    currentView = k;
+    document.querySelectorAll('.view').forEach(v => {
+      v.classList.remove('active');
+      if (v.id === 'v-' + k) { void v.offsetWidth; v.classList.add('active'); }
+    });
     document.querySelectorAll('.nav-item').forEach(n => n.dataset.go === k ? n.setAttribute('aria-current', 'page') : n.removeAttribute('aria-current'));
     window.scrollTo({ top: 0, behavior: reduce ? 'auto' : 'smooth' });
-    if (k === 'home') { drawChart(currentRange); animateRings(); }
+    if (k === 'home') { drawChart(currentRange); animateRings(); placePill(seg); }
     if (k === 'calc') calc();
     if (k === 'invest') updatePreview();
   }
@@ -799,34 +955,24 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
 
   // ---------- Übersicht ----------
   $('#today').textContent = dFmt(TODAY, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const hour = new Date().getHours();
-  $('#greet').textContent = (hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend') + ', Moritz';
-
-  let liveTotal = total;
+  let liveTotal = 0;
   const heroEl = $('#hero-amount');
   function startHero() {
+    liveTotal = D.total;
     if (reduce) { heroEl.innerHTML = heroFmt(liveTotal); return; }
-    const t0 = performance.now();
+    const t0 = performance.now(), to = D.total;
     (function tick(now) {
       const p = Math.min(1, (now - t0) / 1600), e = 1 - Math.pow(1 - p, 4);
-      heroEl.innerHTML = heroFmt(total * e);
+      heroEl.innerHTML = heroFmt(to * e);
       if (p < 1) requestAnimationFrame(tick);
     })(t0);
   }
   // Live-Zinsen: der Betrag wächst sichtbar mit dem sekundengenauen Zins
   setInterval(() => {
-    if (!document.getElementById('v-home').classList.contains('active')) return;
-    liveTotal += dailyInt / 86400 * 3;
+    if (currentView !== 'home' || $('#app').hidden) return;
+    liveTotal += D.dailyInt / 86400 * 3;
     heroEl.innerHTML = heroFmt(liveTotal);
   }, 3000);
-
-  $('#flex-amt').textContent = eur(flex);
-  $('#inv-amt').textContent = eur(invested);
-  const bars = $('#split-bar').children;
-  bars[0].style.flex = flex; bars[1].style.flex = invested;
-  countUp($('#today-int'), dailyInt, v => eur(v));
-  countUp($('#s-interest'), totalInt + invInterest, v => eur(v), 1800);
-  countUp($('#s-cash'), totalCash, v => eur(v), 1800);
 
   $('#kest-btn').addEventListener('click', e => {
     const open = $('#kest-explain').classList.toggle('open');
@@ -835,14 +981,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   $('#notice-x').addEventListener('click', () => { $('#notice').classList.add('gone'); $('#bell .badge-dot').hidden = true; });
   $('#bell').addEventListener('click', () => { $('#notice').classList.remove('gone'); $('#bell .badge-dot').hidden = false; });
 
-  // Investitionen
   const C = 2 * Math.PI * 18;
-  $('#inv-list').innerHTML = investments.map(inv => `
-    <div class="inv">
-      <div class="ring"><svg viewBox="0 0 46 46"><circle class="bg" cx="23" cy="23" r="18"/><circle class="fg" cx="23" cy="23" r="18" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-p="${inv.progress}"/></svg><span>${Math.round(inv.progress * 100)}%</span></div>
-      <div style="min-width:0"><div class="inv-name">${inv.name}</div><div class="inv-meta">${(inv.apy * 100).toFixed(2).replace('.', ',')} % · noch ${inv.remaining} Tage · fällig ${dFmt(addDays(inv.start, inv.days), { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>
-      <div class="inv-val"><b class="num">${eur(inv.current)}</b><span class="num">+${eur(inv.maturity - inv.principal)} am Ende</span></div>
-    </div>`).join('');
   function animateRings() {
     document.querySelectorAll('.ring .fg').forEach(c => {
       c.style.transition = 'none'; c.style.strokeDashoffset = C;
@@ -850,26 +989,91 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     });
   }
 
-  // Buchungen
   const txIcons = {
     in: '<path d="M12 5v14M5 12l7 7 7-7"/>',
     out: '<path d="M12 19V5M5 12l7-7 7 7"/>',
     int: '<path d="M12 2l2.4 6.9H21l-5.4 4.2 2 7L12 16l-5.6 4.1 2-7L3 8.9h6.6z"/>',
-    cash: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>'
+    cash: '<rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/>',
+    kest: '<path d="M4 4h16v16H4z"/><path d="M8 9h8M8 13h8M8 17h4"/>'
   };
+  const icClass = { in: 'in', out: 'out', int: 'int', cash: 'out', kest: '' };
   const txRow = t => `<div class="tx">
-    <span class="tx-ic ${t.type === 'cash' ? 'out' : t.type}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${txIcons[t.type]}</svg></span>
-    <div style="min-width:0"><div class="tx-title">${t.title}</div><div class="tx-sub">${dFmt(t.date)}${t.cashback ? ` · <span style="color:var(--gold);font-weight:600">+${eur(t.cashback)} Cashback</span>` : ''}</div></div>
+    <span class="tx-ic ${icClass[t.type]}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${txIcons[t.type]}</svg></span>
+    <div style="min-width:0"><div class="tx-title">${esc(t.title)}</div><div class="tx-sub">${dFmt(t.date)}${t.cashback ? ` · <span style="color:var(--gold);font-weight:600">+${eur(t.cashback)} Cashback</span>` : ''}${t.type === 'kest' ? ' · auf die Zinsgutschrift' : ''}</div></div>
     <div class="tx-amt num ${t.amount > 0 ? 'pos' : ''}">${t.amount > 0 ? '+' : '−'}${eur(Math.abs(t.amount))}</div></div>`;
-  const recent = txs.slice().reverse();
-  $('#tx-recent').innerHTML = recent.slice(0, 6).map(txRow).join('');
+
+  function renderPerson(animate = true) {
+    const p = P();
+    D = build(p);
+    const hour = new Date().getHours();
+    $('#greet').textContent = (hour < 11 ? 'Guten Morgen' : hour < 18 ? 'Hallo' : 'Guten Abend') + ', ' + p.name;
+    $('#side-name').textContent = p.name;
+    $('#side-rate').textContent = 'FLEX-Zins ' + pct(p.flexRate) + ' p.a.';
+    $('#notice-from').innerHTML = senderLine(p);
+    $('#notice-text').textContent = p.message;
+    $('#notice').classList.remove('gone'); $('#bell .badge-dot').hidden = false;
+
+    // KESt: Text hängt vom eingestellten Satz und vom Absendernamen ab
+    const bankNet = p.flexRate * 0.75;
+    if (p.kestRate > 0) {
+      $('#kest-label').textContent = 'nach KESt';
+      $('#kest-text').textContent = `Von jeder Zinsgutschrift werden ${pct(p.kestRate, 1).replace(',0', '')} Kapitalertragssteuer abgezogen, so wie bei einer Bank. Alle Beträge in der App sind schon nach Abzug. Dein FLEX-Zins von ${pct(p.flexRate)} ergibt netto ${pct(p.flexRate * (1 - p.kestRate))}.`;
+    } else {
+      $('#kest-label').textContent = 'KESt-frei';
+      $('#kest-text').textContent = `Banken in Österreich behalten 25 % deiner Zinsen als Kapitalertragssteuer ein. ${p.sender ? p.sender + ' übernimmt' : 'Hier wird'} diese Steuer für dich${p.sender ? '' : ' übernommen'}. Bei deinem FLEX-Zins von ${pct(p.flexRate)} würde eine Bank dir effektiv nur ${pct(bankNet)} auszahlen.`;
+    }
+    $('#kest-explain').classList.remove('open'); $('#kest-btn').setAttribute('aria-expanded', false);
+
+    $('#flex-amt').textContent = eur(D.flex);
+    $('#inv-amt').textContent = eur(D.invested);
+    const bars = $('#split-bar').children;
+    bars[0].style.flex = D.flex; bars[1].style.flex = Math.max(D.invested, 0.0001);
+
+    $('#s-interest-sub').textContent = p.kestRate > 0 ? 'nach Abzug der KESt' : 'steuerfrei gutgeschrieben';
+    // Cashback nur zeigen, wenn aktiv oder schon welches angefallen ist
+    const showCash = p.cashbackRate > 0 || D.totalCash > 0;
+    $('#stat-cash').hidden = !showCash;
+    $('#stat-interest').classList.toggle('full', !showCash);
+    $('#s-cash-sub').textContent = p.cashbackRate > 0 ? `${pct(p.cashbackRate, 1)} auf Curve-Zahlungen` : 'derzeit nicht aktiv';
+    $('#next-sub').textContent = `FLEX · am 1. ${dFmt(new Date(TODAY.getFullYear(), TODAY.getMonth() + 1, 1), { month: 'long' })}${p.kestRate > 0 ? ' · nach KESt' : ''}`;
+    $('#next-int').textContent = '≈ ' + eur(D.nextCredit);
+
+    const fmt = v => eur(v);
+    if (animate) {
+      countUp($('#today-int'), D.dailyInt, fmt);
+      countUp($('#s-interest'), D.totalInt, fmt, 1800);
+      countUp($('#s-cash'), D.totalCash, fmt, 1800);
+    } else {
+      $('#today-int').textContent = fmt(D.dailyInt); $('#s-interest').textContent = fmt(D.totalInt); $('#s-cash').textContent = fmt(D.totalCash);
+    }
+
+    $('#inv-list').innerHTML = D.invs.length ? D.invs.map(inv => `
+      <div class="inv">
+        <div class="ring"><svg viewBox="0 0 46 46"><circle class="bg" cx="23" cy="23" r="18"/><circle class="fg" cx="23" cy="23" r="18" stroke-dasharray="${C}" stroke-dashoffset="${C}" data-p="${inv.progress}"/></svg><span>${Math.round(inv.progress * 100)}%</span></div>
+        <div style="min-width:0"><div class="inv-name">${inv.name}</div><div class="inv-meta">${pct(inv.apy)} · noch ${inv.remaining} Tage · fällig ${dFmt(addDays(inv.start, inv.days), { day: 'numeric', month: 'short', year: 'numeric' })}</div></div>
+        <div class="inv-val"><b class="num">${eur(inv.current)}</b><span class="num">+${eur(inv.maturity - inv.principal)} am Ende${p.kestRate > 0 ? ' (netto)' : ''}</span></div>
+      </div>`).join('') : '<div class="hint">Noch keine Investitionen.</div>';
+
+    $('#tx-recent').innerHTML = D.txs.slice().reverse().slice(0, 6).map(txRow).join('');
+
+    // Anlegen, Konto, Profil
+    $('#avail').textContent = eur(D.flex);
+    $('#acc-bal').textContent = eur(D.flex);
+    $('#acc-rate').textContent = pct(p.flexRate) + ' p.a.' + (p.kestRate > 0 ? ' vor KESt' : '');
+    $('#profile-sub').textContent = `${p.name} · seit ${dFmt(p.since, { month: 'long', year: 'numeric' })} dabei`;
+    $('#payout-sub').textContent = payoutInfo(p);
+    renderAccount();
+    if (currentView === 'home') { drawChart(currentRange); animateRings(); }
+    if (currentView === 'invest') updatePreview();
+  }
 
   // ---------- Verlaufsdiagramm (SVG) ----------
   let currentRange = 365;
   function drawChart(range) {
     currentRange = range;
     const wrap = $('#chart-wrap');
-    const pts = history.filter(h => (TODAY - h.d) / 864e5 <= range);
+    if (!wrap.clientWidth) return;
+    const pts = D.history.filter(h => (TODAY - h.d) / 864e5 <= range);
     const step = Math.max(1, Math.floor(pts.length / 120));
     const s = pts.filter((_, i) => i % step === 0 || i === pts.length - 1);
     const W = Math.max(280, wrap.clientWidth), H = 200, padL = 4, padR = 4, padT = 12, padB = 24;
@@ -894,9 +1098,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     const line = wrap.querySelector('.chart-line');
     const len = line.getTotalLength();
     line.style.strokeDasharray = len; line.style.setProperty('--len', len);
-    const first = s[0];
-    const diff = last.v - first.v;
-    $('#chart-delta').innerHTML = `<b class="num">+${eur(diff)}</b> im gewählten Zeitraum`;
+    $('#chart-delta').innerHTML = `<b class="num">+${eur(last.v - s[0].v)}</b> im gewählten Zeitraum`;
 
     const svg = wrap.querySelector('svg'), tip = $('#tip'), cur = svg.querySelector('#cur'), dot = svg.querySelector('#cdot');
     function move(ev) {
@@ -909,7 +1111,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
       tip.innerHTML = `<b class="num">${eur(s[i].v)}</b>${dFmt(s[i].d, { day: 'numeric', month: 'short', year: 'numeric' })}`;
       tip.style.opacity = 1;
     }
-    function leave() { tip.style.opacity = 0; cur.classList.remove('on'); cur.setAttribute('x1', -10); cur.setAttribute('x2', -10); dot.setAttribute('cx', x(s.length - 1)); dot.setAttribute('cy', y(last.v)); }
+    function leave() { tip.style.opacity = 0; cur.classList.remove('on'); dot.setAttribute('cx', x(s.length - 1)); dot.setAttribute('cy', y(last.v)); }
     svg.addEventListener('mousemove', move); svg.addEventListener('touchmove', move, { passive: true });
     svg.addEventListener('mouseleave', leave); svg.addEventListener('touchend', leave);
   }
@@ -923,11 +1125,16 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     seg.querySelectorAll('button').forEach(x => x.setAttribute('aria-pressed', x === b));
     placePill(seg); drawChart(+b.dataset.range);
   });
-  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { placePill(seg); if ($('#v-home').classList.contains('active')) drawChart(currentRange); if ($('#v-calc').classList.contains('active')) calc(); }, 150); });
+  let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { placePill(seg); if (currentView === 'home') drawChart(currentRange); if (currentView === 'calc') calc(); }, 150); });
 
   // ---------- Anlegen ----------
+  const products = [
+    { id: 1, name: 'Tagesgeld FLEX', apy: 0.03, lock: 0, freq: 'monatlich', desc: 'Jederzeit verfügbar. Zinsen kommen jeden Monat dazu.' },
+    { id: 2, name: 'Festgeld 6 Monate', apy: 0.035, lock: 182, freq: 'endfällig', desc: 'Etwas mehr Zinsen, dafür ist das Geld ein halbes Jahr fest.' },
+    { id: 3, name: 'Festgeld 12 Monate', apy: 0.04, lock: 365, freq: 'endfällig', desc: 'Ein Jahr fest angelegt. Zinsen bekommst du am Ende auf einmal.' },
+    { id: 4, name: 'P2P-Kredite', apy: 0.06, lock: 730, freq: 'vierteljährlich', desc: 'Du leihst Geld an viele kleine Kreditnehmer. Höherer Zins, zwei Jahre Bindung.' }
+  ];
   let selected = products[2];
-  $('#avail').textContent = eur(flex);
   $('#products').innerHTML = products.map(p => `<button type="button" class="prod" data-id="${p.id}" aria-pressed="${p === selected}">
       <div class="prod-top"><span class="prod-name">${p.name}</span><span class="prod-apy num">${(p.apy * 100).toFixed(1).replace('.', ',')}<small> %</small></span></div>
       <div class="prod-desc">${p.desc}</div>
@@ -944,24 +1151,24 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   $('#inv-range').addEventListener('input', e => { $('#inv-amount').value = e.target.value; updatePreview(); });
   $('#inv-amount').addEventListener('input', e => { $('#inv-range').value = e.target.value; updatePreview(); });
   function updatePreview() {
+    const p = P();
     const a = Math.max(0, +$('#inv-amount').value || 0);
     const days = selected.lock || 365;
-    const end = a * Math.pow(1 + selected.apy, days / 365);
+    const interest = (a * Math.pow(1 + selected.apy, days / 365) - a) * (1 - p.kestRate);
     $('#inv-preview').innerHTML = `
       <div><div class="k">${selected.lock ? 'Fällig am' : 'Nach 1 Jahr'}</div><div class="v">${dFmt(addDays(TODAY, days), { day: 'numeric', month: 'short', year: '2-digit' })}</div></div>
-      <div><div class="k">Zinsen</div><div class="v gold num">+${eur(end - a)}</div></div>
-      <div><div class="k">Auszahlung</div><div class="v num">${eur(end)}</div></div>`;
+      <div><div class="k">Zinsen${p.kestRate > 0 ? ' netto' : ''}</div><div class="v gold num">+${eur(interest)}</div></div>
+      <div><div class="k">Auszahlung</div><div class="v num">${eur(a + interest)}</div></div>`;
   }
   $('#invest-form').addEventListener('submit', e => {
     e.preventDefault();
     const a = +$('#inv-amount').value;
     if (a < 100) { toast('Mindestens € 100 anlegen'); return; }
-    if (a > flex) { toast('So viel ist auf FLEX nicht verfügbar'); return; }
+    if (a > D.flex) { toast('So viel ist auf FLEX nicht verfügbar'); return; }
     toast(`${eur(a, 0)} in ${selected.name} angelegt`);
   });
 
   // ---------- Konto ----------
-  $('#acc-bal').textContent = eur(flex);
   const filterDefs = [['all', 'Alle'], ['in', 'Eingänge'], ['int', 'Zinsen'], ['out', 'Ausgänge']];
   let filter = 'all';
   $('#filters').innerHTML = filterDefs.map(([k, l]) => `<button class="fchip" data-f="${k}" aria-pressed="${k === filter}">${l}</button>`).join('');
@@ -969,21 +1176,20 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     const b = e.target.closest('button'); if (!b) return;
     filter = b.dataset.f;
     document.querySelectorAll('#filters button').forEach(x => x.setAttribute('aria-pressed', x === b));
-    renderAccount();
+    renderAccount(true);
   });
-  function renderAccount() {
-    const list = recent.filter(t => filter === 'all' || t.type === filter || (filter === 'out' && t.type === 'cash'));
+  const matches = t => filter === 'all' || t.type === filter || (filter === 'out' && t.type === 'cash') || (filter === 'int' && t.type === 'kest');
+  function renderAccount(anim) {
     let html = '', lastM = '';
-    list.forEach(t => {
+    D.txs.slice().reverse().filter(matches).forEach(t => {
       const m = dFmt(t.date, { month: 'long', year: 'numeric' });
       if (m !== lastM) { html += `<div class="month">${m}</div>`; lastM = m; }
       html += txRow(t);
     });
     const el = $('#tx-all');
     el.innerHTML = html;
-    if (!reduce) el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 350, easing: 'ease-out' });
+    if (anim && !reduce) el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 350, easing: 'ease-out' });
   }
-  renderAccount();
 
   // ---------- Rechner ----------
   function calc() {
@@ -1024,30 +1230,31 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
     e.currentTarget.setAttribute('aria-checked', on);
     toast(on ? 'Benachrichtigungen aktiviert' : 'Benachrichtigungen aus');
   });
-  $('#logout').addEventListener('click', () => showLogin());
+  $('#logout').addEventListener('click', () => setMode('login'));
 
   // ---------- Sheets ----------
   const sheets = {
-    payout: `<h2 id="sheet-title">Auszahlung beantragen</h2><p class="lead">Papi bekommt sofort eine Benachrichtigung. Verfügbar: <b class="num">${eur(flex)}</b></p>
+    payout: () => `<h2 id="sheet-title">Auszahlung beantragen</h2><p class="lead">${payoutInfo(P())}. Verfügbar: <b class="num">${eur(D.flex)}</b></p>
       <form class="form" id="sheet-form"><div class="field"><label for="po-amt">Betrag (€)</label><input class="input amount-input num" id="po-amt" type="number" min="1" step="0.01" placeholder="0,00" required></div>
       <div class="field"><label for="po-note">Wofür? (optional)</label><input class="input" id="po-note" maxlength="500" placeholder="z. B. Fahrrad-Reparatur"></div>
       <button class="btn">Antrag senden</button></form>`,
-    pin: `<h2 id="sheet-title">PIN ändern</h2><p class="lead">Wähle eine neue PIN mit 4 bis 6 Ziffern.</p>
+    pin: () => `<h2 id="sheet-title">PIN ändern</h2><p class="lead">Wähle eine neue PIN mit 4 bis 6 Ziffern.</p>
       <form class="form" id="sheet-form"><div class="field"><label for="pin-old">Aktuelle PIN</label><input class="input" id="pin-old" type="password" inputmode="numeric" maxlength="6" required></div>
       <div class="row2"><div class="field"><label for="pin-new">Neue PIN</label><input class="input" id="pin-new" type="password" inputmode="numeric" maxlength="6" required></div>
       <div class="field"><label for="pin-new2">Wiederholen</label><input class="input" id="pin-new2" type="password" inputmode="numeric" maxlength="6" required></div></div>
       <button class="btn">PIN speichern</button></form>`,
-    concept: `<h2 id="sheet-title">Das Konzept</h2><p class="lead">Ruhig und klar, mit Wärme dort, wo Geld dazukommt.</p>
+    concept: () => `<h2 id="sheet-title">Das Konzept</h2><p class="lead">Ruhig und klar, mit Wärme dort, wo Geld dazukommt.</p>
       <ul class="principles">
         <li><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h10M4 18h6"/></svg></span><div><b>Das Wichtigste zuerst</b><span>Gesamtkapital, Zinsen heute und die Aufteilung FLEX/Investiert stehen oben in einer Karte. Details folgen darunter.</span></div></li>
         <li><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="7" height="18" rx="2"/><rect x="14" y="3" width="7" height="10" rx="2"/></svg></span><div><b>Fünf klare Bereiche</b><span>Übersicht, Anlegen, Konto, Rechner, Profil statt einer langen Seite mit Klappbereichen. Am Handy als Tab-Leiste, am Computer als Seitenleiste.</span></div></li>
-        <li><span class="tx-ic int"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l2.4 6.9H21l-5.4 4.2 2 7L12 16l-5.6 4.1 2-7L3 8.9h6.6z"/></svg></span><div><b>Gold heißt geschenkt</b><span>Zinsen und Cashback sind immer goldgelb. So sieht man auf einen Blick, was das Geld selbst verdient hat.</span></div></li>
+        <li><span class="tx-ic int"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l2.4 6.9H21l-5.4 4.2 2 7L12 16l-5.6 4.1 2-7L3 8.9h6.6z"/></svg></span><div><b>Gold heißt verdient</b><span>Zinsen und Cashback sind immer goldgelb. So sieht man auf einen Blick, was das Geld selbst verdient hat.</span></div></li>
+        <li><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M17 11h4M19 9v4"/></svg></span><div><b>Pro Person eingestellt</b><span>Absendername, Cashback, KESt und Zinssätze kommen aus dem Admin-Bereich. Wer kein Cashback hat, sieht es nicht. Wo kein Absender eingetragen ist, bleiben die Texte neutral.</span></div></li>
         <li><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg></span><div><b>Sanfte Bewegung mit Sinn</b><span>Der Kontostand zählt hoch und wächst live mit den Zinsen, Laufzeit-Ringe füllen sich, Ansichten gleiten ein. Bei „Bewegung reduzieren“ ist alles statisch.</span></div></li>
         <li><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="7" y="2" width="10" height="20" rx="2"/></svg></span><div><b>Handy zuerst</b><span>PIN-Tastenfeld statt Textfeld, große Tippflächen, Formulare als Bottom-Sheet. Ab Tablet-Breite zweispaltig.</span></div></li>
       </ul>`
   };
   function openSheet(k) {
-    $('#sheet-body').innerHTML = sheets[k];
+    $('#sheet-body').innerHTML = sheets[k]();
     $('#scrim').classList.add('open'); $('#sheet').classList.add('open');
     const f = $('#sheet-form');
     if (f) {
@@ -1056,7 +1263,7 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
         e.preventDefault();
         if (k === 'pin' && $('#pin-new').value !== $('#pin-new2').value) { toast('Die neuen PINs stimmen nicht überein'); return; }
         closeSheet();
-        toast(k === 'pin' ? 'PIN geändert' : 'Antrag gesendet, Papi wurde informiert');
+        toast(k === 'pin' ? 'PIN geändert' : payoutDone(P()));
       });
     }
   }
@@ -1064,6 +1271,105 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
   $('#scrim').addEventListener('click', closeSheet);
   addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
   $('#p-concept').addEventListener('click', () => openSheet('concept'));
+
+  // ---------- Admin ----------
+  function renderAdminPeople() {
+    $('#admin-people').innerHTML = Object.entries(people).map(([k, p]) => {
+      const d = k === pk ? D : build(p);
+      return `<button class="person" data-person="${k}" aria-pressed="${k === pk}"><span class="avatar">${p.name[0]}</span><span><span class="pn">${p.name}</span><br><span class="pb num">${eur(d.total)}</span></span></button>`;
+    }).join('');
+  }
+  function renderAdmin() {
+    const p = P();
+    renderAdminPeople();
+    $('#cond-title').textContent = 'Konditionen für ' + p.name;
+    $('#a-flex').value = (p.flexRate * 100).toFixed(2);
+    $('#a-cb-on').setAttribute('aria-checked', p.cashbackRate > 0);
+    $('#a-cb').value = ((p.cashbackRate || p.cbLast || 0.03) * 100).toFixed(1);
+    $('#a-cb').disabled = !(p.cashbackRate > 0);
+    $('#a-kest').value = String(p.kestRate);
+    $('#a-sender').value = p.sender;
+    $('#cond-hist').innerHTML = '<div style="font-weight:600;color:var(--ink)">Änderungsverlauf</div>' + p.rateHist.map((h, i) =>
+      `<div class="${h.fresh && i === 0 ? 'new' : ''}"><span>${esc(h.t)}</span><span class="num">ab ${dFmt(h.d, { day: '2-digit', month: '2-digit', year: 'numeric' })}</span></div>`).join('');
+    p.rateHist.forEach(h => { h.fresh = false; });
+    renderTxTypes();
+    $('#a-tx-date').value = TODAY.toISOString().slice(0, 10);
+    $('#a-msg-to').innerHTML = `<option value="all">Alle</option>` + Object.entries(people).map(([k, q]) => `<option value="${k}" ${k === pk ? 'selected' : ''}>${q.name}</option>`).join('');
+    renderMsgPreview();
+  }
+  function renderTxTypes() {
+    const p = P();
+    const opts = [['in', 'Einzahlung'], ['out', 'Auszahlung'], ['int', 'Zinsgutschrift']];
+    // Curve-Zahlung nur anbieten, wenn für diese Person Cashback aktiv ist
+    if (p.cashbackRate > 0) opts.push(['curve', `Curve-Zahlung (+${pct(p.cashbackRate, 1)} Cashback)`]);
+    const prev = $('#a-tx-type').value;
+    $('#a-tx-type').innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+    if (opts.some(o => o[0] === prev)) $('#a-tx-type').value = prev;
+    txHint();
+  }
+  function txHint() {
+    const p = P(), a = +$('#a-tx-amt').value || 0, t = $('#a-tx-type').value;
+    $('#a-tx-hint').textContent = t === 'curve'
+      ? `Bucht den Betrag ab und schreibt ${a ? eur(Math.round(a * p.cashbackRate * 100) / 100) : pct(p.cashbackRate, 1)} Cashback gut.`
+      : t === 'int' && p.kestRate > 0 ? `Davon werden automatisch ${pct(p.kestRate, 1)} KESt abgezogen.` : '';
+  }
+  $('#a-tx-type').addEventListener('change', txHint);
+  $('#a-tx-amt').addEventListener('input', txHint);
+  $('#tx-form').addEventListener('submit', e => { e.preventDefault(); toast(`Buchung für ${P().name} gespeichert`); $('#a-tx-amt').value = ''; txHint(); });
+
+  function renderMsgPreview() {
+    const to = $('#a-msg-to').value;
+    const target = to === 'all' ? P() : people[to];
+    $('#msg-preview').innerHTML = `<div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+      <div><b>${senderLine(target)}</b><span>${esc($('#a-msg').value || '…')}</span>${to === 'all' ? `<br><span style="font-size:12px">So sieht es ${esc(target.name)}. Jede Person sieht ihren eigenen Absendernamen.</span>` : ''}</div>`;
+  }
+  $('#a-msg').addEventListener('input', renderMsgPreview);
+  $('#a-msg-to').addEventListener('change', renderMsgPreview);
+  $('#msg-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const to = $('#a-msg-to').value;
+    const msg = $('#a-msg').value.trim(); if (!msg) return;
+    (to === 'all' ? Object.values(people) : [people[to]]).forEach(p => { p.message = msg; });
+    toast(to === 'all' ? 'Nachricht an alle gesendet' : `Nachricht an ${people[to].name} gesendet`);
+  });
+
+  $('#a-cb-on').addEventListener('click', e => {
+    const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
+    e.currentTarget.setAttribute('aria-checked', on);
+    $('#a-cb').disabled = !on;
+  });
+  $('#cond-form').addEventListener('submit', e => {
+    e.preventDefault();
+    const p = P();
+    const flex = Math.max(0, +$('#a-flex').value || 0) / 100;
+    const cbOn = $('#a-cb-on').getAttribute('aria-checked') === 'true';
+    const cb = cbOn ? Math.max(0, +$('#a-cb').value || 0) / 100 : 0;
+    const kest = +$('#a-kest').value;
+    const sender = $('#a-sender').value.trim();
+    const changed = flex !== p.flexRate || cb !== p.cashbackRate || kest !== p.kestRate;
+    if (p.cashbackRate > 0) p.cbLast = p.cashbackRate;
+    Object.assign(p, { flexRate: flex, cashbackRate: cb, kestRate: kest, sender });
+    if (changed) {
+      p.rateHist.unshift({ d: TODAY, fresh: true, t: `FLEX ${pct(flex)} · ${cb > 0 ? 'Cashback ' + pct(cb, 1) : 'kein Cashback'}${kest > 0 ? ' · KESt ' + pct(kest, 1).replace(',0', '') : ''}` });
+    }
+    D = build(p);
+    renderAdmin();
+    renderPerson(false);
+    toast(`Gespeichert. ${p.name} sieht die neuen Werte sofort.`);
+  });
+
+  // ---------- Personen-Umschalter ----------
+  $('#proto-people').innerHTML = Object.entries(people).map(([k, p]) => `<button class="proto-btn" data-person="${k}" aria-pressed="${k === pk}">${p.name}</button>`).join('');
+  function setPerson(k) {
+    pk = k;
+    document.querySelectorAll('#proto-people [data-person]').forEach(b => b.setAttribute('aria-pressed', b.dataset.person === k));
+    renderPerson();
+    if (!$('#admin').hidden) renderAdmin();
+    if (!$('#app').hidden && currentView === 'home') startHero();
+  }
+  document.addEventListener('click', e => {
+    const b = e.target.closest('[data-person]'); if (b) setPerson(b.dataset.person);
+  });
 
   // ---------- Login ----------
   let pin = '';
@@ -1080,28 +1386,30 @@ input[type="range"] { width: 100%; accent-color: var(--brand); }
         setTimeout(() => { dots.classList.remove('shake'); pin = ''; renderDots(); }, 450);
       } else {
         dots.classList.add('ok');
-        setTimeout(() => { dots.classList.remove('ok'); pin = ''; renderDots(); showApp(); }, 450);
+        setTimeout(() => { dots.classList.remove('ok'); pin = ''; renderDots(); setMode('app'); }, 450);
       }
     }
   }
   $('#keypad').addEventListener('click', e => { const b = e.target.closest('[data-k]'); if (b) press(b.dataset.k); });
   addEventListener('keydown', e => { if ($('#login').hidden) return; if (/^\d$/.test(e.key)) press(e.key); if (e.key === 'Backspace') press('⌫'); });
 
-  function showLogin() {
-    $('#app').hidden = true; $('#login').hidden = false;
-    $('#p-login').setAttribute('aria-pressed', true); $('#p-app').setAttribute('aria-pressed', false);
-    $('#login-hint').textContent = 'Demo: beliebige 4 Ziffern, „0000“ zeigt den Fehlerzustand';
-    const card = $('.login-card'); card.style.animation = 'none'; card.offsetHeight; card.style.animation = '';
+  // ---------- Modus: Login / App / Admin ----------
+  function setMode(m) {
+    $('#login').hidden = m !== 'login'; $('#app').hidden = m !== 'app'; $('#admin').hidden = m !== 'admin';
+    document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
+    if (m === 'login') {
+      $('#login-hint').textContent = `Demo (${P().name}): beliebige 4 Ziffern, „0000“ zeigt den Fehlerzustand`;
+      const card = $('.login-card'); card.style.animation = 'none'; void card.offsetHeight; card.style.animation = '';
+    }
+    if (m === 'app') { renderPerson(); go('home'); startHero(); }
+    if (m === 'admin') {
+      renderAdmin();
+      const g = $('#admin-grid'); g.classList.remove('stagger'); void g.offsetWidth; g.classList.add('stagger');
+    }
   }
-  function showApp() {
-    $('#login').hidden = true; $('#app').hidden = false;
-    $('#p-login').setAttribute('aria-pressed', false); $('#p-app').setAttribute('aria-pressed', true);
-    go('home'); startHero(); placePill(seg);
-  }
-  $('#p-login').addEventListener('click', showLogin);
-  $('#p-app').addEventListener('click', showApp);
+  document.querySelectorAll('[data-mode]').forEach(b => b.addEventListener('click', () => setMode(b.dataset.mode)));
 
   // Start
-  go('home'); startHero(); requestAnimationFrame(() => placePill(seg));
+  renderPerson(); go('home'); startHero(); requestAnimationFrame(() => placePill(seg));
 })();
 </script>
