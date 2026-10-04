@@ -2,174 +2,265 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Dein Kapital</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#FAF3E3">
+<meta name="theme-color" content="#F4F6FA">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dein Kapital">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/css/style.css">
-<script src="/js/vendor/chart.umd.min.js"></script>
 <script>
-(function() {
-  document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
+// Theme und Farbschema vor dem ersten Paint setzen (kein Aufblitzen)
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+    var p = localStorage.getItem('palette');
+    if (p && p !== 'blau') document.documentElement.dataset.palette = p;
+  } catch (e) {}
 })();
 </script>
 </head>
 <body>
 
-<div id="login-screen" class="login-screen">
-  <button class="theme-toggle" id="theme-toggle-login" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
+<!-- ============ LOGIN ============ -->
+<section class="login" id="login" hidden>
   <div class="login-card">
-    <div class="login-eyebrow">Zugang</div>
-    <h1 class="login-title">Dein Kapital</h1>
-    <form id="login-form">
-      <input id="pin-input" class="pin-input" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="••••" autocomplete="off" autofocus>
-      <button type="submit" class="pin-submit">Einloggen</button>
-    </form>
-    <div id="login-error" class="login-error"></div>
-  </div>
-</div>
-
-<div id="dashboard" class="app-shell" style="display:none;">
-  <div class="app-header">
+    <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>
     <div>
-      <div class="greeting" id="greeting">Hallo</div>
-      <div class="subtitle">Stand von heute</div>
+      <h1>Willkommen zurück</h1>
+      <p>Gib deine PIN ein</p>
     </div>
-    <div class="header-actions">
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
-      <button class="logout-link" id="logout-btn">Abmelden</button>
-    </div>
-  </div>
-
-  <div id="push-banner" class="message-banner" style="display:none;">
-    <div class="message-banner-body" id="push-banner-text"></div>
-    <button class="message-banner-dismiss" id="push-banner-dismiss" type="button" aria-label="Hinweis schließen">×</button>
-  </div>
-
-  <div id="message-banners"></div>
-
-  <div class="stamp-card">
-    <div class="stamp-eyebrow"><span>Gesamtkapital</span><span id="stamp-date"></span></div>
-    <div class="stamp-balance flap-board" id="balance-amount"></div>
-    <div class="stamp-tax-note"><span id="kest-note-text"></span><button class="info-btn" id="kest-info-btn" type="button" title="Info">ⓘ</button></div>
-    <div class="product-description" id="kest-explainer" style="display:none;"></div>
-    <div class="stamp-daily" id="flex-balance-line"></div>
-    <div class="stamp-daily">Zinsen heute: <span class="amount" id="daily-interest">€ 0,00</span></div>
-  </div>
-
-  <div class="cashback-card" id="interest-card" style="display:none;">
-    <div class="cashback-box">
-      <div class="cashback-eyebrow">Lifetime interest earned</div>
-    </div>
-    <div class="cashback-box cashback-box-amount">
-      <div class="cashback-amount" id="total-interest">€ 0,00</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Verlauf</div>
-    <canvas id="history-chart" height="90"></canvas>
-  </div>
-
-  <div class="cashback-card" id="cashback-card" style="display:none;">
-    <div class="cashback-box">
-      <div class="cashback-eyebrow">Lifetime cashback earned</div>
-    </div>
-    <div class="cashback-box cashback-box-amount">
-      <div class="cashback-amount" id="cashback-amount">€ 0,00</div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="flex-ledger-balance">FLEX-Kontostand: <span id="flex-ledger-balance-amount">€ 0,00</span></div>
-    <table class="ledger-table" id="ledger-table">
-      <thead>
-        <tr><th>Datum</th><th>Art</th><th style="text-align:right;">Betrag</th></tr>
-      </thead>
-      <tbody id="ledger-body"></tbody>
-    </table>
-    <div class="empty-note" id="ledger-empty" style="display:none;">Noch keine Bewegungen erfasst.</div>
-    <button type="button" class="ledger-show-all" id="ledger-show-all" style="display:none;">Alle ansehen</button>
-  </div>
-
-  <div class="section" id="investments-section" style="display:none;">
-    <div class="section-title">Investitionen</div>
-    <table class="ledger-table" id="investment-table">
-      <thead><tr><th>Produkt</th><th>Restzeit</th><th>Kapital + Zinsen heute</th><th>Zinsen bei Endfälligkeit</th></tr></thead>
-      <tbody id="investment-body"></tbody>
-    </table>
-  </div>
-
-  <div class="section" id="products-section" style="display:none;">
-    <div class="section-title">Neues Produkt starten</div>
-    <table class="ledger-table" id="available-product-table">
-      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th></tr></thead>
-      <tbody id="available-product-body"></tbody>
-    </table>
-    <form class="admin-form" id="invest-form" style="margin-top:16px;">
-      <select id="invest-product" required></select>
-      <input type="number" id="invest-amount" step="0.01" min="100" placeholder="Betrag in € (mind. 100)" required>
-      <button type="submit" class="admin-submit">Investieren</button>
+    <form id="login-form" autocomplete="off">
+      <label class="sr-only" for="pin-input">PIN</label>
+      <input id="pin-input" class="sr-only" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off">
+      <div class="pin-dots" id="pin-dots" aria-hidden="true"></div>
     </form>
-    <div id="invest-message" class="pin-change-message"></div>
+    <div class="keypad" id="keypad"></div>
+    <div class="login-error" id="login-error" role="alert"></div>
   </div>
+</section>
 
-  <details class="section">
-    <summary class="section-title">Auszahlung beantragen</summary>
-    <form class="admin-form" id="payout-request-form">
-      <input type="number" id="payout-amount" step="0.01" min="0.01" placeholder="Betrag in €" required>
-      <input type="text" id="payout-note" placeholder="Notiz (optional)" maxlength="500">
-      <button type="submit" class="admin-submit">Antrag senden</button>
-    </form>
-    <div id="payout-request-message" class="pin-change-message"></div>
-  </details>
+<!-- ============ APP ============ -->
+<div class="app" id="app" hidden>
+  <aside class="side" aria-label="Navigation">
+    <div class="brand"><div class="logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>Dein Kapital</div>
+    <nav id="side-nav" style="display:grid;gap:4px;"></nav>
+    <div class="side-foot"><strong id="side-name"></strong><span id="side-rate"></span></div>
+  </aside>
 
-  <details class="section" id="calculator-section">
-    <summary class="section-title">Zinseszinsrechner</summary>
-    <form class="admin-form" id="calculator-form">
-      <input type="number" id="calc-capital" step="0.01" min="0" placeholder="Startkapital in €" value="1000" required>
-      <div class="calc-duration">
-        <input type="number" id="calc-duration" step="1" min="1" placeholder="Laufzeit" value="5" required>
-        <select id="calc-duration-unit">
-          <option value="months">Monate</option>
-          <option value="years" selected>Jahre</option>
-        </select>
+  <main class="main">
+    <!-- ÜBERSICHT -->
+    <section class="view active" id="v-home">
+      <header class="top">
+        <div>
+          <h1 id="greet"></h1>
+          <div class="date" id="today"></div>
+        </div>
+        <div class="top-actions">
+          <button class="icon-btn theme-toggle" type="button" aria-label="Hell/Dunkel umschalten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button>
+        </div>
+      </header>
+
+      <div class="grid two stagger">
+        <div class="col">
+          <div class="msg-stack" id="push-banner-wrap" style="--i:0"></div>
+          <div class="msg-stack" id="messages" style="--i:0"></div>
+
+          <div class="hero" style="--i:1">
+            <div class="hero-top"><span>Gesamtkapital</span><span style="display:flex;align-items:center;gap:7px;"><i class="live"></i>live</span></div>
+            <div class="hero-amount" id="hero-amount">€ 0<span class="cents">,00</span></div>
+            <div class="hero-chips">
+              <span class="chip"><span class="up">▲</span> <span class="num" id="today-int">€ 0,00</span> Zinsen heute</span>
+              <button class="chip" id="kest-btn" type="button" aria-expanded="false" aria-controls="kest-explain"><span id="kest-label">KESt-frei</span> <span aria-hidden="true">ⓘ</span></button>
+            </div>
+            <div class="explain" id="kest-explain"><div><p id="kest-text"></p></div></div>
+            <div class="split">
+              <div class="split-bar" id="split-bar"><i></i><i></i></div>
+              <div class="split-legend">
+                <span><span class="dot" style="background:var(--hero-bar-1)"></span>FLEX verfügbar<b class="num" id="flex-amt"></b></span>
+                <span style="text-align:right"><span class="dot" style="background:var(--hero-bar-2)"></span>Investiert<b class="num" id="inv-amt"></b></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick" style="--i:2">
+            <button class="qa" type="button" data-go="invest"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg></span>Investieren</button>
+            <button class="qa" type="button" data-sheet="payout"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg></span>Auszahlung</button>
+            <button class="qa" type="button" data-go="calc"><span class="ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 7h6M9 12h.01M12 12h.01M15 12h.01M9 16h.01M12 16h.01M15 16h.01"/></svg></span>Rechner</button>
+          </div>
+
+          <div class="card" style="--i:3">
+            <div class="card-head">
+              <h2>Verlauf</h2>
+              <div class="seg" id="range-seg" role="group" aria-label="Zeitraum">
+                <span class="pill"></span>
+                <button type="button" data-range="90" aria-pressed="false">3M</button>
+                <button type="button" data-range="365" aria-pressed="true">1J</button>
+                <button type="button" data-range="100000" aria-pressed="false">Alles</button>
+              </div>
+            </div>
+            <div class="chart-delta" id="chart-delta"></div>
+            <div class="chart-wrap" id="chart-wrap"><div class="tip" id="tip"></div></div>
+          </div>
+
+          <div class="card" style="--i:4">
+            <div class="card-head"><h2>Deine Investitionen</h2><button class="link" type="button" data-go="invest">+ Neu</button></div>
+            <div class="inv-list" id="inv-list"></div>
+          </div>
+        </div>
+
+        <div class="col">
+          <div class="stats" style="--i:2">
+            <div class="stat gold" id="stat-interest"><div class="label">Zinsen seit Start</div><div class="value num" id="s-interest">€ 0,00</div><div class="sub" id="s-interest-sub"></div></div>
+            <div class="stat gold" id="stat-cash"><div class="label">Cashback gesamt</div><div class="value num" id="s-cash">€ 0,00</div><div class="sub" id="s-cash-sub"></div></div>
+            <div class="stat wide"><div><div class="label">Nächste Zinsgutschrift</div><div class="sub" id="next-sub"></div></div><div class="value num" style="font-size:18px" id="next-int"></div></div>
+          </div>
+
+          <div class="card" style="--i:3">
+            <div class="card-head"><h2>Letzte Bewegungen</h2><button class="link" type="button" data-go="account">Alle</button></div>
+            <div class="tx-list" id="tx-recent"></div>
+          </div>
+        </div>
       </div>
-      <label for="calc-rate" class="calc-field-label full">Zinssatz in % pro Jahr</label>
-      <input type="number" id="calc-rate" step="0.01" min="0" placeholder="z.B. 5" value="5" required>
-      <label for="calc-contribution" class="calc-field-label full">Monatlicher Sparbeitrag in € (optional)</label>
-      <input type="number" id="calc-contribution" step="0.01" min="0" placeholder="0" value="0">
-      <select id="calc-frequency" required>
-        <option value="monthly">Zinszubuchung monatlich</option>
-        <option value="quarterly">Zinszubuchung vierteljährlich</option>
-        <option value="yearly" selected>Zinszubuchung jährlich</option>
-        <option value="maturity">Endfällig (bei Fälligkeit)</option>
-      </select>
-      <button type="submit" class="admin-submit">Berechnen</button>
-    </form>
-    <canvas id="calculator-chart" height="90"></canvas>
-    <div class="projection-footnote" id="calculator-footnote"></div>
-  </details>
+    </section>
 
-  <details class="section">
-    <summary class="section-title">PIN ändern</summary>
-    <form id="pin-change-form" class="pin-change-form">
-      <input id="current-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Aktuelle PIN" autocomplete="off">
-      <input id="new-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Neue PIN" autocomplete="off">
-      <input id="new-pin-confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" placeholder="Neue PIN wiederholen" autocomplete="off">
-      <button type="submit" class="admin-submit">PIN ändern</button>
-    </form>
-    <div id="pin-change-message" class="pin-change-message"></div>
-  </details>
+    <!-- ANLEGEN -->
+    <section class="view" id="v-invest">
+      <header class="top"><div><h1>Geld anlegen</h1><div class="date">Wähle ein Produkt und einen Betrag</div></div></header>
+      <div class="grid two stagger">
+        <div class="col">
+          <div class="products" id="products" style="--i:0"></div>
+        </div>
+        <div class="col">
+          <div class="card" style="--i:1">
+            <form class="form" id="invest-form">
+              <div class="field">
+                <label for="invest-amount">Betrag (€)</label>
+                <input class="input amount-input num" id="invest-amount" type="number" min="100" step="0.01" value="100" inputmode="decimal" required>
+                <input type="range" id="invest-range" min="100" max="1000" step="10" value="100" aria-label="Betrag einstellen">
+                <div class="presets" id="presets"></div>
+                <div class="hint">Mindestens € 100 · verfügbar: <span class="num" id="avail"></span></div>
+              </div>
+              <div class="preview" id="invest-preview"></div>
+              <button class="btn" type="submit" id="invest-submit">Jetzt investieren</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- KONTO -->
+    <section class="view" id="v-account">
+      <header class="top"><div><h1>FLEX-Konto</h1><div class="date">Kontostand <b class="num" id="acc-bal" style="color:var(--ink)"></b> · <span id="acc-rate"></span></div></div></header>
+      <div class="card">
+        <div class="filters" id="filters"></div>
+        <div class="tx-list" id="tx-all"></div>
+      </div>
+    </section>
+
+    <!-- RECHNER -->
+    <section class="view" id="v-calc">
+      <header class="top"><div><h1>Zinseszinsrechner</h1><div class="date">Was wird aus deinem Geld?</div></div></header>
+      <div class="grid two stagger">
+        <div class="col">
+          <div class="card" style="--i:0">
+            <div class="calc-result">
+              <div><div class="eyebrow">Endkapital</div><div class="big num" id="c-final"></div></div>
+              <div><div class="eyebrow">davon Zinsen</div><div class="big num" id="c-int" style="color:var(--gold)"></div></div>
+            </div>
+            <div class="legend"><span><i style="background:var(--brand);opacity:.35"></i>Eingezahlt</span><span><i style="background:var(--gold)"></i>Zinsen</span></div>
+            <div class="chart-wrap" id="calc-chart"></div>
+            <div class="calc-note" id="calc-note"></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card" style="--i:1">
+            <form class="form" id="calc-form">
+              <div class="field"><label for="c-cap">Startkapital (€)</label><input class="input num" id="c-cap" type="number" value="1000" min="0" step="50"></div>
+              <div class="field"><label for="c-rate">Zinssatz: <span id="c-rate-v" class="num"></span> p.a.</label><input type="range" id="c-rate" min="0.5" max="10" step="0.1" value="5"></div>
+              <div class="field"><label for="c-years">Laufzeit: <span id="c-years-v" class="num"></span></label><input type="range" id="c-years" min="1" max="30" step="1" value="10"></div>
+              <div class="field"><label for="c-monthly">Monatlich sparen (€)</label><input class="input num" id="c-monthly" type="number" value="0" min="0" step="5"></div>
+              <div class="field"><label for="c-freq">Zinszubuchung</label>
+                <select class="input" id="c-freq">
+                  <option value="monthly">monatlich</option>
+                  <option value="quarterly">vierteljährlich</option>
+                  <option value="yearly" selected>jährlich</option>
+                  <option value="maturity">endfällig (am Ende)</option>
+                </select>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROFIL -->
+    <section class="view" id="v-profile">
+      <header class="top"><div><h1>Profil</h1><div class="date" id="profile-sub"></div></div></header>
+      <div class="grid two stagger">
+        <div class="card" style="--i:0">
+          <div class="settings">
+            <button class="set" type="button" data-sheet="payout"><span class="tx-ic in"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M5 12l7 7 7-7"/></svg></span><span><span class="t">Auszahlung beantragen</span><br><span class="s" id="payout-sub"></span></span><span class="end">›</span></button>
+            <button class="set" type="button" data-sheet="pin"><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span><span><span class="t">PIN ändern</span><br><span class="s">4–6 Ziffern</span></span><span class="end">›</span></button>
+            <div class="set" id="push-setting" hidden><span class="tx-ic int"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg></span><span><span class="t">Benachrichtigungen</span><br><span class="s" id="push-sub">Bei Gutschriften und Nachrichten</span></span><button class="switch end" type="button" role="switch" aria-checked="false" aria-label="Benachrichtigungen" id="sw-push"></button></div>
+            <div class="set"><span class="tx-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></span><span><span class="t">Dunkles Design</span><br><span class="s">Ohne Auswahl folgt die App dem System</span></span><button class="switch end" type="button" role="switch" aria-checked="false" aria-label="Dunkles Design" id="sw-dark"></button></div>
+          </div>
+        </div>
+        <div class="col">
+          <div class="card" style="--i:1">
+            <div class="card-head"><h2>Farbschema</h2></div>
+            <div class="palettes" id="palettes" role="radiogroup" aria-label="Farbschema"></div>
+            <div class="hint" style="margin-top:10px">Gilt nur für dich und auf allen deinen Geräten.</div>
+          </div>
+          <div class="card" style="--i:2">
+            <button class="btn secondary" type="button" id="logout-btn">Abmelden</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="tabbar" id="tabbar" aria-label="Navigation"></nav>
 </div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="grab"></div>
+  <button type="button" class="sheet-x" id="sheet-close" aria-label="Schließen">✕</button>
+  <div data-sheet-body="payout" hidden>
+    <h2 id="sheet-title-payout">Auszahlung beantragen</h2>
+    <p class="lead" id="payout-lead"></p>
+    <form class="form" id="payout-form">
+      <div class="field"><label for="payout-amount">Betrag (€)</label><input class="input amount-input num" id="payout-amount" type="number" min="0.01" step="0.01" placeholder="0,00" inputmode="decimal" required></div>
+      <div class="field"><label for="payout-note">Wofür? (optional)</label><input class="input" id="payout-note" maxlength="500" placeholder="z. B. Fahrrad-Reparatur"></div>
+      <button class="btn" type="submit">Antrag senden</button>
+    </form>
+  </div>
+  <div data-sheet-body="pin" hidden>
+    <h2 id="sheet-title-pin">PIN ändern</h2>
+    <p class="lead">Wähle eine neue PIN mit 4 bis 6 Ziffern.</p>
+    <form class="form" id="pin-form">
+      <div class="field"><label for="current-pin">Aktuelle PIN</label><input class="input" id="current-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" required></div>
+      <div class="row2">
+        <div class="field"><label for="new-pin">Neue PIN</label><input class="input" id="new-pin" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" required></div>
+        <div class="field"><label for="new-pin-confirm">Wiederholen</label><input class="input" id="new-pin-confirm" type="password" inputmode="numeric" pattern="[0-9]*" maxlength="6" autocomplete="off" required></div>
+      </div>
+      <button class="btn" type="submit">PIN speichern</button>
+    </form>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"><span class="check">✓</span><span id="toast-text"></span></div>
 
 <script src="/js/theme.js"></script>
+<script src="/js/ui.js"></script>
 <script src="/js/app.js"></script>
 </body>
 </html>

@@ -2,157 +2,180 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Verwaltung — Dein Kapital</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Verwaltung – Dein Kapital</title>
 <link rel="manifest" href="/manifest.json">
-<meta name="theme-color" content="#FAF3E3">
+<meta name="theme-color" content="#F4F6FA">
 <link rel="icon" type="image/png" sizes="32x32" href="/icons/favicon-32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/icons/favicon-16.png">
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,600;12..96,700&family=Figtree:wght@400;500;600;700&display=swap">
 <link rel="stylesheet" href="/css/style.css">
 <script>
-(function() {
-  document.documentElement.dataset.theme = localStorage.getItem('theme') || 'light';
+(function () {
+  try {
+    var t = localStorage.getItem('theme');
+    if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t;
+  } catch (e) {}
 })();
 </script>
 </head>
 <body>
 
-<div id="login-screen" class="login-screen">
-  <button class="theme-toggle" id="theme-toggle-login" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
+<!-- ============ LOGIN ============ -->
+<section class="login" id="login" hidden>
   <div class="login-card">
-    <div class="login-eyebrow">Verwaltung</div>
-    <h1 class="login-title">Admin-Zugang</h1>
-    <form id="login-form">
-      <input id="pin-input" class="pin-input" type="password" inputmode="numeric" placeholder="••••" autocomplete="off" autofocus>
-      <button type="submit" class="pin-submit">Einloggen</button>
-    </form>
-    <div id="login-error" class="login-error"></div>
-  </div>
-</div>
-
-<div id="admin-dashboard" class="admin-shell" style="display:none;">
-  <div class="app-header">
+    <div class="logo"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17l5-5 4 3 7-8"/><path d="M15 7h5v5"/></svg></div>
     <div>
-      <div class="greeting">Verwaltung</div>
-      <div class="subtitle">Buchungen erfassen</div>
+      <h1>Verwaltung</h1>
+      <p>Gib deine Admin-PIN ein</p>
     </div>
-    <div class="header-actions">
-      <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Hell/Dunkel umschalten">🌙</button>
-      <button class="logout-link" id="logout-btn">Abmelden</button>
+    <form id="login-form" autocomplete="off">
+      <label class="sr-only" for="pin-input">Admin-PIN</label>
+      <input id="pin-input" class="sr-only" type="password" inputmode="numeric" maxlength="12" autocomplete="off">
+      <div class="pin-dots" id="pin-dots" aria-hidden="true"></div>
+    </form>
+    <div class="keypad" id="keypad"></div>
+    <div class="login-error" id="login-error" role="alert"></div>
+  </div>
+</section>
+
+<!-- ============ VERWALTUNG ============ -->
+<div class="admin" id="admin" hidden>
+  <header class="top">
+    <div><h1>Verwaltung</h1><div class="date">Konditionen, Buchungen und Nachrichten pro Person</div></div>
+    <div class="admin-top-actions">
+      <button class="icon-btn theme-toggle" type="button" aria-label="Hell/Dunkel umschalten"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9z"/></svg></button>
+      <button class="btn secondary small" type="button" id="logout-btn">Abmelden</button>
     </div>
-  </div>
+  </header>
+  <div class="people" id="people"></div>
 
-  <div class="son-picker" id="son-picker"></div>
+  <div class="grid two stagger" id="admin-grid">
+    <div class="col">
+      <!-- Konditionen -->
+      <div class="card" style="--i:0">
+        <div class="card-head"><h2 id="cond-title">Konditionen</h2></div>
+        <form id="cond-form">
+          <div class="cond-row">
+            <div><div class="t">FLEX-Zinssatz</div><div class="s">Gilt ab heute. Bereits gutgeschriebene Zinsen bleiben unverändert.</div></div>
+            <div class="suffix"><input class="input num" id="a-flex" type="number" min="0" max="50" step="0.01" required aria-label="FLEX-Zinssatz in Prozent"><span>%</span></div>
+          </div>
+          <div class="cond-row">
+            <div><div class="t">Cashback auf Curve-Zahlungen</div><div class="s">Ausgeschaltet: kein Cashback und keine Cashback-Anzeige in der App.</div></div>
+            <div class="cond-ctl">
+              <button type="button" class="switch" role="switch" aria-checked="false" aria-label="Cashback aktiv" id="a-cb-on"></button>
+              <div class="suffix"><input class="input num" id="a-cb" type="number" min="0" max="50" step="0.1" aria-label="Cashback in Prozent"><span>%</span></div>
+            </div>
+          </div>
+          <div class="cond-row">
+            <div><div class="t">Kapitalertragssteuer</div><div class="s">0 % bedeutet: du übernimmst die Steuer, die App zeigt „KESt-frei“.</div></div>
+            <select class="input" id="a-kest" style="width:120px" aria-label="KESt-Satz"><option value="0">0 %</option><option value="0.25">25 %</option><option value="0.275">27,5 %</option></select>
+          </div>
+          <div class="cond-row" style="border-bottom:0">
+            <div><div class="t">Absender in der App</div><div class="s">So heißt du in Nachrichten und Hinweisen. Leer lassen für neutrale Texte.</div></div>
+            <input class="input" id="a-sender" maxlength="30" placeholder="z. B. Papi" style="width:160px" aria-label="Absendername">
+          </div>
+          <button class="btn" type="submit">Konditionen speichern</button>
+        </form>
+        <div class="hist" id="cond-hist"></div>
+      </div>
 
-  <div class="section">
-    <div class="section-title">Nachricht senden</div>
-    <form class="admin-form" id="message-form">
-      <select id="message-recipient" required>
-        <option value="">Alle</option>
-      </select>
-      <textarea id="message-body" class="full" rows="3" placeholder="Nachricht (wird als Banner im Dashboard angezeigt)" required></textarea>
-      <button type="submit" class="admin-submit">Nachricht senden</button>
-    </form>
-    <table class="ledger-table" id="message-table">
-      <thead><tr><th>An</th><th>Nachricht</th><th></th></tr></thead>
-      <tbody id="message-body-list"></tbody>
-    </table>
-    <div class="empty-note" id="message-empty" style="display:none;">Noch keine Nachrichten gesendet.</div>
-  </div>
+      <!-- Neue Buchung -->
+      <div class="card" style="--i:1">
+        <div class="card-head"><h2>Neue FLEX-Buchung</h2></div>
+        <form class="form" id="tx-form">
+          <div class="row2">
+            <div class="field"><label for="tx-date">Datum</label><input class="input" id="tx-date" type="date" required></div>
+            <div class="field"><label for="tx-type">Art</label><select class="input" id="tx-type"></select></div>
+          </div>
+          <div class="row2">
+            <div class="field"><label for="tx-amount">Betrag (€)</label><input class="input num" id="tx-amount" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+            <div class="field"><label for="tx-note">Notiz</label><input class="input" id="tx-note" placeholder="optional"></div>
+          </div>
+          <div class="hint" id="tx-hint"></div>
+          <button class="btn" type="submit">Buchung speichern</button>
+        </form>
+      </div>
 
-  <div class="section">
-    <div class="section-title">Neue FLEX-Buchung</div>
-    <form class="admin-form" id="tx-form">
-      <input type="date" id="tx-date" required>
-      <select id="tx-type" required>
-        <option value="deposit">Einzahlung</option>
-        <option value="withdrawal">Auszahlung</option>
-        <option value="interest">Zinsgutschrift</option>
-        <option value="curve_payment">Curve-Zahlung (mit 3% Cashback)</option>
-      </select>
-      <input type="number" id="tx-amount" step="0.01" min="0" placeholder="Betrag in €" required>
-      <input type="text" id="tx-note" placeholder="Notiz (optional)">
-      <button type="submit" class="admin-submit">Buchung speichern</button>
-    </form>
-  </div>
+      <!-- Buchungen -->
+      <div class="card" style="--i:2">
+        <div class="card-head"><h2>Bisherige FLEX-Buchungen</h2></div>
+        <div class="list" id="tx-list"></div>
+        <button type="button" class="btn secondary small show-all" id="tx-show-all" hidden>Alle anzeigen</button>
+      </div>
+    </div>
 
-  <div class="section">
-    <div class="section-title">FLEX-Zinssatz (für Hochrechnung)</div>
-    <form class="admin-form" id="rate-form">
-      <input type="number" id="rate-input" step="0.01" min="0" max="100" placeholder="z.B. 3 für 3%">
-      <button type="submit" class="admin-submit" style="grid-column:1/-1;">Zins speichern</button>
-    </form>
-  </div>
+    <div class="col">
+      <!-- Nachricht -->
+      <div class="card" style="--i:1">
+        <div class="card-head"><h2>Nachricht senden</h2></div>
+        <form class="form" id="msg-form">
+          <div class="field"><label for="msg-to">An</label><select class="input" id="msg-to"></select></div>
+          <div class="field"><label for="msg-body">Nachricht</label><textarea class="input" id="msg-body" maxlength="1000" required placeholder="Wird als Hinweis in der App angezeigt und als Push-Nachricht verschickt"></textarea></div>
+          <div class="preview-label">Vorschau in der App</div>
+          <div class="notice notice-sm" id="msg-preview"></div>
+          <button class="btn" type="submit">Senden</button>
+        </form>
+        <div class="list section-gap" id="msg-list"></div>
+      </div>
 
-  <div class="section">
-    <div class="section-title">Automatische FLEX-Buchung am 1. des Monats</div>
-    <form class="admin-form" id="recurring-form">
-      <select id="recurring-type" required>
-        <option value="deposit">Einzahlung</option>
-        <option value="withdrawal">Auszahlung</option>
-        <option value="interest">Zinsgutschrift</option>
-      </select>
-      <input type="number" id="recurring-amount" step="0.01" min="0" placeholder="Betrag in €" required>
-      <input type="text" id="recurring-note" class="full" placeholder="Notiz (z.B. Taschengeld)">
-      <button type="submit" class="admin-submit">Automatische Buchung anlegen</button>
-    </form>
-    <table class="ledger-table" id="recurring-table">
-      <thead><tr><th>Art</th><th>Betrag</th><th>Notiz</th><th></th></tr></thead>
-      <tbody id="recurring-body"></tbody>
-    </table>
-    <div class="empty-note" id="recurring-empty" style="display:none;">Keine automatische Buchung für diese Person eingerichtet.</div>
-  </div>
+      <!-- Automatische Buchungen -->
+      <div class="card" style="--i:2">
+        <div class="card-head"><h2>Automatisch am 1. des Monats</h2></div>
+        <form class="form" id="rec-form">
+          <div class="row2">
+            <div class="field"><label for="rec-type">Art</label><select class="input" id="rec-type"><option value="deposit">Einzahlung</option><option value="withdrawal">Auszahlung</option><option value="interest">Zinsgutschrift</option></select></div>
+            <div class="field"><label for="rec-amount">Betrag (€)</label><input class="input num" id="rec-amount" type="number" min="0.01" step="0.01" inputmode="decimal" required></div>
+          </div>
+          <div class="field"><label for="rec-note">Notiz</label><input class="input" id="rec-note" placeholder="z. B. Taschengeld"></div>
+          <button class="btn" type="submit">Automatische Buchung anlegen</button>
+        </form>
+        <div class="list section-gap" id="rec-list"></div>
+      </div>
 
-  <div class="section">
-    <div class="section-title">Bisherige FLEX-Buchungen</div>
-    <table class="ledger-table" id="tx-table">
-      <thead><tr><th>Datum</th><th>Art</th><th>Betrag</th><th></th></tr></thead>
-      <tbody id="tx-body"></tbody>
-    </table>
-    <div class="empty-note" id="tx-empty" style="display:none;">Noch keine Buchungen für diese Person.</div>
-  </div>
+      <!-- Investitionen -->
+      <div class="card" style="--i:3">
+        <div class="card-head"><h2>Investitionen</h2></div>
+        <form class="form" id="inv-form">
+          <div class="field"><label for="inv-product">Produkt</label><select class="input" id="inv-product" required></select></div>
+          <div class="field"><label for="inv-amount">Betrag (€)</label><input class="input num" id="inv-amount" type="number" min="100" step="0.01" inputmode="decimal" required></div>
+          <div class="hint">Mindestens € 100. Der Betrag wird vom FLEX-Konto abgebucht.</div>
+          <button class="btn" type="submit">Investition anlegen</button>
+        </form>
+        <div class="list section-gap" id="inv-list"></div>
+      </div>
 
-  <div class="section">
-    <div class="section-title">Anlageprodukte (global)</div>
-    <form class="admin-form" id="product-form">
-      <input type="text" id="product-name" class="full" placeholder="Name, z.B. P2P-Kredite" required>
-      <input type="number" id="product-lock-days" step="1" min="0" placeholder="Bindung in Tagen (0 = flexibel)" required>
-      <input type="number" id="product-apy" step="0.01" min="0" placeholder="APY in % (z.B. 6)" required>
-      <select id="product-frequency" required>
-        <option value="monthly">Zinszubuchung monatlich</option>
-        <option value="quarterly">Zinszubuchung vierteljährlich</option>
-        <option value="yearly">Zinszubuchung jährlich</option>
-        <option value="maturity">Endfällig (bei Fälligkeit)</option>
-      </select>
-      <textarea id="product-description" class="full" rows="3" placeholder="Erklärungstext: was ist das Produkt, wie funktioniert es? (optional)"></textarea>
-      <button type="submit" class="admin-submit" id="product-submit">Produkt anlegen</button>
-      <button type="button" class="tx-delete full" id="product-cancel-edit" style="display:none;">Bearbeiten abbrechen</button>
-    </form>
-    <table class="ledger-table" id="product-table">
-      <thead><tr><th>Name</th><th>Bindung</th><th>APY</th><th>Zinszubuchung</th><th colspan="2"></th></tr></thead>
-      <tbody id="product-body"></tbody>
-    </table>
-    <div class="empty-note" id="product-empty" style="display:none;">Noch keine Anlageprodukte angelegt.</div>
-  </div>
-
-  <div class="section">
-    <div class="section-title">Neue Investition</div>
-    <form class="admin-form" id="investment-form">
-      <select id="investment-product" required></select>
-      <input type="number" id="investment-amount" step="0.01" min="100" placeholder="Betrag in € (mind. 100)" required>
-      <button type="submit" class="admin-submit">Investition anlegen</button>
-    </form>
-    <div id="investment-message" class="pin-change-message"></div>
-    <table class="ledger-table" id="investment-table">
-      <thead><tr><th>Produkt</th><th>Kapital</th><th>Aktueller Wert</th><th>Fällig am</th><th>Status</th></tr></thead>
-      <tbody id="investment-body"></tbody>
-    </table>
-    <div class="empty-note" id="investment-empty" style="display:none;">Keine Investitionen für diese Person.</div>
+      <!-- Produkte -->
+      <div class="card" style="--i:4">
+        <div class="card-head"><h2 id="prod-title">Anlageprodukte (für alle)</h2></div>
+        <form class="form" id="prod-form">
+          <div class="field"><label for="prod-name">Name</label><input class="input" id="prod-name" required placeholder="z. B. Festgeld 12 Monate"></div>
+          <div class="row2">
+            <div class="field"><label for="prod-lock">Bindung (Tage, 0 = flexibel)</label><input class="input num" id="prod-lock" type="number" min="0" step="1" required></div>
+            <div class="field"><label for="prod-apy">Zinssatz (% p.a.)</label><input class="input num" id="prod-apy" type="number" min="0" step="0.01" required></div>
+          </div>
+          <div class="field"><label for="prod-freq">Zinszubuchung</label>
+            <select class="input" id="prod-freq"><option value="monthly">monatlich</option><option value="quarterly">vierteljährlich</option><option value="yearly">jährlich</option><option value="maturity">endfällig</option></select>
+          </div>
+          <div class="field"><label for="prod-desc">Erklärung (optional)</label><textarea class="input" id="prod-desc" maxlength="1000" placeholder="Was ist das Produkt, wie funktioniert es?"></textarea></div>
+          <div class="row2">
+            <button class="btn" type="submit" id="prod-submit">Produkt anlegen</button>
+            <button class="btn secondary" type="button" id="prod-cancel" hidden>Abbrechen</button>
+          </div>
+        </form>
+        <div class="list section-gap" id="prod-list"></div>
+      </div>
+    </div>
   </div>
 </div>
+
+<div class="toast" id="toast" role="status"><span class="check">✓</span><span id="toast-text"></span></div>
 
 <script src="/js/theme.js"></script>
+<script src="/js/ui.js"></script>
 <script src="/js/admin.js"></script>
 </body>
 </html>
