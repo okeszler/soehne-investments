@@ -930,26 +930,29 @@ textarea.input { resize: vertical; min-height: 84px; }
   // ---------- Hilfen ----------
   const $ = s => document.querySelector(s);
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
-  // Hochzählen: schneller Start, langsames Auslaufen (easeOutQuint).
+  // Hochzählen wie in Dagoberts Geldspeicher: sehr starkes Ease-out (1 - (1 - t)^12),
+  // extrem schneller Start, langes Ausklingen, 2 Sekunden, ab dem zuletzt angezeigten Wert.
   // Pro Element läuft immer nur eine Animation; eine neue bricht die alte ab.
-  const easeOut = p => 1 - Math.pow(1 - p, 5);
-  const runs = new WeakMap();
-  function animateValue(el, to, render, dur) {
+  const easeOut = p => 1 - Math.pow(1 - p, 12);
+  const runs = new WeakMap(), shown = new WeakMap();
+  function animateValue(el, to, render, dur = 2000) {
     const id = (runs.get(el) || 0) + 1;
     runs.set(el, id);
-    if (reduce) { render(to); return Promise.resolve(true); }
+    const from = shown.get(el) || 0;
+    const show = v => { shown.set(el, v); render(v); };
+    if (reduce || dur === 0) { show(to); return Promise.resolve(true); }
     const t0 = performance.now();
     return new Promise(done => {
       (function tick(now) {
         if (runs.get(el) !== id) return done(false);
         // rAF-Zeitstempel kann vor t0 liegen: auf 0..1 klammern, sonst gibt es negative Werte
         const p = Math.min(1, Math.max(0, (now - t0) / dur));
-        render(to * easeOut(p));
+        show(from + (to - from) * easeOut(p));
         if (p < 1) requestAnimationFrame(tick); else done(true);
       })(t0);
     });
   }
-  const countUp = (el, to, fmt, dur = 2000) => animateValue(el, to, v => { el.textContent = fmt(v); }, dur);
+  const countUp = (el, to, fmt, dur) => animateValue(el, to, v => { el.textContent = fmt(v); }, dur);
   const heroFmt = v => { const [i, c] = v.toLocaleString('de-AT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).split(','); return `€ ${i}<span class="cents">,${c}</span>`; };
   let toastTimer;
   function toast(msg) {
@@ -1041,7 +1044,7 @@ textarea.input { resize: vertical; min-height: 84px; }
   function startHero() {
     liveTotal = D.total;
     heroCounting = true;
-    animateValue(heroEl, D.total, v => { heroEl.innerHTML = heroFmt(v); }, 2200)
+    animateValue(heroEl, D.total, v => { heroEl.innerHTML = heroFmt(v); })
       .then(finished => { if (finished) heroCounting = false; });
   }
   // Live-Zinsen: der Betrag wächst sichtbar mit dem sekundengenauen Zins (erst nach dem Hochzählen)
@@ -1118,8 +1121,8 @@ textarea.input { resize: vertical; min-height: 84px; }
     const fmt = v => eur(v);
     if (animate) {
       countUp($('#today-int'), D.dailyInt, fmt);
-      countUp($('#s-interest'), D.totalInt, fmt, 2400);
-      countUp($('#s-cash'), D.totalCash, fmt, 2400);
+      countUp($('#s-interest'), D.totalInt, fmt);
+      countUp($('#s-cash'), D.totalCash, fmt);
     } else {
       [['#today-int', D.dailyInt], ['#s-interest', D.totalInt], ['#s-cash', D.totalCash]].forEach(([sel, v]) => animateValue($(sel), v, x => { $(sel).textContent = fmt(x); }, 0));
     }
@@ -1477,6 +1480,8 @@ textarea.input { resize: vertical; min-height: 84px; }
     document.querySelectorAll('[data-mode]').forEach(b => b.setAttribute('aria-pressed', b.dataset.mode === m));
     applyPalette(m === 'admin' ? 'blau' : P().palette);
     if (m === 'login') {
+      // Nach dem Login wieder ab 0 zählen, wie beim Neuladen der Seite
+      [heroEl, $('#today-int'), $('#s-interest'), $('#s-cash')].forEach(el => shown.delete(el));
       $('#login-hint').textContent = `Demo (${P().name}): beliebige 4 Ziffern, „0000“ zeigt den Fehlerzustand`;
       const card = $('.login-card'); card.style.animation = 'none'; void card.offsetHeight; card.style.animation = '';
     }
