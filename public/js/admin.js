@@ -1,426 +1,377 @@
-const eurFormatter = new Intl.NumberFormat('de-AT', { style: 'currency', currency: 'EUR' });
-const eur = (n) => eurFormatter.format(n);
-const dateFmt = (isoDate) => new Date(isoDate).toLocaleDateString('de-AT', { day: '2-digit', month: '2-digit', year: 'numeric' });
-const typeLabels = { deposit: 'Einzahlung', withdrawal: 'Auszahlung', interest: 'Zinsgutschrift', cashback: 'Cashback', kest: 'KESt' };
-const txClass = { deposit: 'tx-deposit', withdrawal: 'tx-withdrawal', interest: 'tx-interest', cashback: 'tx-cashback', kest: 'tx-kest' };
-
-const escapeDiv = document.createElement('div');
-function escapeHtml(str) {
-  escapeDiv.textContent = str == null ? '' : String(str);
-  return escapeDiv.innerHTML;
-}
+// Verwaltung: Konditionen pro Person, Buchungen, automatische Buchungen, Nachrichten,
+// Investitionen und Anlageprodukte. Gemeinsame Helfer kommen aus ui.js.
 
 let sons = [];
 let activeSonId = null;
-let recurring = [];
 let products = [];
+let messages = [];
 let editingProductId = null;
+let txExpanded = false;
+let freshChange = false;
+const TX_PAGE = 8;
 
-const frequencyLabels = { monthly: 'monatlich', quarterly: 'vierteljährlich', yearly: 'jährlich', maturity: 'endfällig' };
+const activeSon = () => sons.find(s => s.id === activeSonId);
 
-async function checkSession() {
-  const res = await fetch('/api/admin/sons');
-  if (res.ok) {
-    const data = await res.json();
-    sons = data.sons;
-    document.getElementById('login-screen').style.display = 'none';
-    document.getElementById('admin-dashboard').style.display = 'block';
-    renderSonPicker();
-    if (sons.length) selectSon(sons[0].id);
-    await loadProducts();
-    populateMessageRecipients();
-    await loadMessages();
-  } else {
-    document.getElementById('login-screen').style.display = 'flex';
-  }
-}
-
-document.getElementById('login-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const pin = document.getElementById('pin-input').value;
-  const errorEl = document.getElementById('login-error');
-  errorEl.textContent = '';
-
-  const res = await fetch('/api/admin-login', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ pin })
-  });
-
-  if (res.ok) {
-    checkSession();
-  } else {
-    errorEl.textContent = 'PIN ungültig.';
-    document.getElementById('pin-input').value = '';
+// ---------- Login ----------
+const keypad = setupKeypad({
+  input: $('#pin-input'), dots: $('#pin-dots'), keypad: $('#keypad'), minLength: 4,
+  onSubmit: async pin => {
+    $('#login-error').textContent = '';
+    const res = await api('/api/admin-login', { method: 'POST', body: { pin } });
+    if (res.ok) { keypad.success(); await start(); }
+    else { $('#login-error').textContent = 'PIN stimmt nicht.'; keypad.fail(); }
   }
 });
 
-document.getElementById('logout-btn').addEventListener('click', async () => {
+async function start() {
+  const res = await api('/api/admin/sons');
+  if (!res.ok) { $('#admin').hidden = true; $('#login').hidden = false; keypad.reset(); return; }
+  sons = res.data.sons || [];
+  $('#login').hidden = true;
+  $('#admin').hidden = false;
+  if (!activeSonId && sons.length) activeSonId = sons[0].id;
+  renderPeople();
+  $('#tx-date').value = new Date().toISOString().slice(0, 10);
+  await Promise.all([loadProducts(), loadMessages()]);
+  await selectSon(activeSonId);
+}
+
+$('#logout-btn').addEventListener('click', async () => {
   await fetch('/api/logout', { method: 'POST' });
   location.reload();
 });
 
-function renderSonPicker() {
-  const picker = document.getElementById('son-picker');
-  picker.innerHTML = sons.map(s =>
-    `<button class="son-pill" data-id="${s.id}">${escapeHtml(s.name)} · ${eur(s.balance)}</button>`
-  ).join('');
-  picker.querySelectorAll('.son-pill').forEach(btn => {
-    btn.addEventListener('click', () => selectSon(Number(btn.dataset.id)));
-  });
+// Zweistufiges Löschen: erster Klick fragt nach, zweiter löscht.
+function confirmButton(btn) {
+  if (btn.dataset.armed) return true;
+  btn.dataset.armed = '1';
+  const original = btn.innerHTML;
+  btn.innerHTML = '<span style="font-size:12px;font-weight:700;padding:0 6px">Löschen?</span>';
+  btn.style.width = 'auto';
+  setTimeout(() => { delete btn.dataset.armed; btn.innerHTML = original; btn.style.width = ''; }, 3000);
+  return false;
 }
+const deleteBtn = (attr, id, label) => `<button type="button" class="icon-sm" ${attr}="${id}" aria-label="${label}">${svgIcon('trash')}</button>`;
+
+// ---------- Personen ----------
+async function refreshSons() {
+  const res = await api('/api/admin/sons');
+  if (res.ok) sons = res.data.sons || [];
+  renderPeople();
+}
+
+function renderPeople() {
+  $('#people').innerHTML = sons.map(s => `<button type="button" class="person" data-son="${s.id}" aria-pressed="${s.id === activeSonId}">
+      <span class="avatar">${escapeHtml(s.name[0] || '?')}</span>
+      <span><span class="pn">${escapeHtml(s.name)}</span><br><span class="pb num">${eur(s.balance)}</span></span></button>`).join('');
+  populateRecipients();
+}
+
+$('#people').addEventListener('click', e => {
+  const b = e.target.closest('[data-son]');
+  if (b) selectSon(Number(b.dataset.son));
+});
 
 async function selectSon(id) {
   activeSonId = id;
-  document.querySelectorAll('.son-pill').forEach(btn => {
-    btn.classList.toggle('active', Number(btn.dataset.id) === id);
-  });
-  const son = sons.find(s => s.id === id);
-  document.getElementById('rate-input').value = (son.annual_rate * 100).toFixed(2);
-  document.getElementById('tx-date').value = new Date().toISOString().slice(0, 10);
-  document.getElementById('investment-message').textContent = '';
-  await loadTransactions();
-  await loadRecurring();
-  await loadInvestments();
+  txExpanded = false;
+  document.querySelectorAll('[data-son]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.son) === id));
+  renderConditions();
+  renderTxTypes();
+  renderMsgPreview();
+  await Promise.all([loadTransactions(), loadRecurring(), loadInvestments()]);
 }
 
-async function loadRecurring() {
-  const res = await fetch('/api/admin/recurring');
-  const data = await res.json();
-  recurring = (data.recurring || []).filter(r => r.son_id === activeSonId);
-  renderRecurring();
+// ---------- Konditionen ----------
+function conditionText(c) {
+  return `FLEX ${pct(c.annual_rate)} · ${c.cashback_rate > 0 ? 'Cashback ' + pctShort(c.cashback_rate) : 'kein Cashback'}${c.kest_rate > 0 ? ' · KESt ' + pctShort(c.kest_rate) : ''}`;
 }
 
-function renderRecurring() {
-  const body = document.getElementById('recurring-body');
-  const empty = document.getElementById('recurring-empty');
-
-  if (!recurring.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
+function renderConditions() {
+  const s = activeSon();
+  if (!s) return;
+  $('#cond-title').textContent = `Konditionen für ${s.name}`;
+  $('#a-flex').value = (s.annual_rate * 100).toFixed(2);
+  const cbOn = s.cashback_rate > 0;
+  $('#a-cb-on').setAttribute('aria-checked', cbOn);
+  $('#a-cb').value = ((cbOn ? s.cashback_rate : 0.03) * 100).toFixed(1);
+  $('#a-cb').disabled = !cbOn;
+  $('#a-kest').value = String(s.kest_rate);
+  if (![...$('#a-kest').options].some(o => o.value === String(s.kest_rate))) {
+    $('#a-kest').insertAdjacentHTML('beforeend', `<option value="${s.kest_rate}">${pctShort(s.kest_rate)}</option>`);
+    $('#a-kest').value = String(s.kest_rate);
   }
-  empty.style.display = 'none';
-
-  body.innerHTML = recurring.map(r => {
-    const cls = r.type === 'deposit' ? 'tx-deposit' : r.type === 'withdrawal' ? 'tx-withdrawal' : 'tx-interest';
-    return `<tr>
-      <td class="${cls}">${typeLabels[r.type]}</td>
-      <td class="${cls}">${eur(r.amount)}</td>
-      <td>${escapeHtml(r.note || '')}</td>
-      <td><button class="tx-delete" data-id="${r.id}">Löschen</button></td>
-    </tr>`;
-  }).join('');
-
-  body.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await fetch(`/api/admin/recurring?id=${btn.dataset.id}`, { method: 'DELETE' });
-      await loadRecurring();
-    });
-  });
+  $('#a-sender').value = s.sender_name || '';
+  const changes = s.changes || [];
+  $('#cond-hist').innerHTML = changes.length
+    ? '<div style="font-weight:600;color:var(--ink)">Änderungsverlauf</div>' + changes.map((c, i) =>
+      `<div class="${i === 0 && freshChange ? 'new' : ''}"><span>${conditionText(c)}</span><span class="num">ab ${dateFmt(c.changed_at)}</span></div>`).join('')
+    : '';
+  freshChange = false;
 }
 
-document.getElementById('recurring-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const body = {
-    sonId: activeSonId,
-    type: document.getElementById('recurring-type').value,
-    amount: parseFloat(document.getElementById('recurring-amount').value),
-    note: document.getElementById('recurring-note').value
-  };
-  await fetch('/api/admin/recurring', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  document.getElementById('recurring-amount').value = '';
-  document.getElementById('recurring-note').value = '';
-  await loadRecurring();
+$('#a-cb-on').addEventListener('click', e => {
+  const on = e.currentTarget.getAttribute('aria-checked') !== 'true';
+  e.currentTarget.setAttribute('aria-checked', on);
+  $('#a-cb').disabled = !on;
+  if (on) $('#a-cb').focus();
 });
+
+$('#cond-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const s = activeSon();
+  const cbOn = $('#a-cb-on').getAttribute('aria-checked') === 'true';
+  const body = {
+    sonId: s.id,
+    annualRate: Math.round(Number($('#a-flex').value) * 100) / 10000,
+    cashbackRate: cbOn ? Math.round(Number($('#a-cb').value) * 100) / 10000 : 0,
+    kestRate: Number($('#a-kest').value),
+    senderName: $('#a-sender').value.trim()
+  };
+  if (cbOn && !(body.cashbackRate > 0)) { toast('Bitte einen Cashback-Satz über 0 % eintragen oder Cashback ausschalten', 'error'); return; }
+  const res = await api('/api/admin/sons', { method: 'POST', body });
+  if (!res.ok) { toast(res.data.error || 'Konditionen konnten nicht gespeichert werden', 'error'); return; }
+  const before = (s.changes || []).length;
+  await refreshSons();
+  freshChange = (activeSon().changes || []).length > before || (activeSon().changes || [])[0]?.changed_at !== (s.changes || [])[0]?.changed_at;
+  renderConditions();
+  renderTxTypes();
+  renderMsgPreview();
+  toast(`Gespeichert. ${s.name} sieht die neuen Werte beim nächsten Öffnen.`);
+});
+
+// ---------- Buchungen ----------
+function renderTxTypes() {
+  const s = activeSon();
+  const opts = [['deposit', 'Einzahlung'], ['withdrawal', 'Auszahlung'], ['interest', 'Zinsgutschrift']];
+  // Curve-Zahlung nur anbieten, wenn für diese Person Cashback aktiv ist
+  if (s && s.cashback_rate > 0) opts.push(['curve_payment', `Curve-Zahlung (+${pctShort(s.cashback_rate)})`]);
+  const prev = $('#tx-type').value;
+  $('#tx-type').innerHTML = opts.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
+  if (opts.some(o => o[0] === prev)) $('#tx-type').value = prev;
+  txHint();
+}
+
+function txHint() {
+  const s = activeSon();
+  const amount = Number($('#tx-amount').value) || 0;
+  const type = $('#tx-type').value;
+  let text = '';
+  if (type === 'curve_payment') text = `Bucht den Betrag ab und schreibt ${amount ? eur(Math.round(amount * s.cashback_rate * 100) / 100) : pctShort(s.cashback_rate)} Cashback gut.`;
+  else if (type === 'interest' && s && s.kest_rate > 0) text = `Hinweis: Für ${s.name} gilt ${pctShort(s.kest_rate)} KESt. Bei manuellen Zinsgutschriften bitte den Nettobetrag buchen.`;
+  $('#tx-hint').textContent = text;
+}
+$('#tx-type').addEventListener('change', txHint);
+$('#tx-amount').addEventListener('input', txHint);
 
 async function loadTransactions() {
-  const res = await fetch(`/api/admin/transactions?sonId=${activeSonId}`);
-  const data = await res.json();
-  const body = document.getElementById('tx-body');
-  const empty = document.getElementById('tx-empty');
-
-  if (!data.transactions.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  body.innerHTML = data.transactions.map(tx => {
-    const cls = txClass[tx.type] || 'tx-interest';
-    return `<tr>
-      <td>${dateFmt(tx.date)}</td>
-      <td class="${cls}">${typeLabels[tx.type]}</td>
-      <td class="${cls}">${eur(tx.amount)}</td>
-      <td><button class="tx-delete" data-id="${tx.id}">Löschen</button></td>
-    </tr>`;
-  }).join('');
-
-  body.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await fetch(`/api/admin/transactions?id=${btn.dataset.id}`, { method: 'DELETE' });
-      await loadTransactions();
-      await refreshSonBalance();
-    });
-  });
+  const res = await api(`/api/admin/transactions?sonId=${activeSonId}`);
+  const txs = res.data.transactions || [];
+  const visible = txExpanded ? txs : txs.slice(0, TX_PAGE);
+  $('#tx-list').innerHTML = visible.length ? visible.map(tx => {
+    const debit = isDebit(tx.type);
+    return `<div class="list-row"><div style="display:flex;gap:12px;align-items:center;min-width:0">
+        <span class="tx-ic ${TX_ICON_CLASS[tx.type] || ''}">${svgIcon(tx.type)}</span>
+        <div style="min-width:0"><div class="t">${escapeHtml(tx.type === 'kest' ? 'KESt' : (tx.note || TX_LABELS[tx.type]))}</div>
+        <div class="s">${dateFmt(tx.date)} · ${TX_LABELS[tx.type]} · <b class="num" style="color:${debit ? 'var(--ink)' : 'var(--pos)'}">${debit ? '−' : '+'}${eur(tx.amount)}</b></div></div></div>
+      <div class="row-actions">${deleteBtn('data-del-tx', tx.id, 'Buchung löschen')}</div></div>`;
+  }).join('') : '<div class="empty">Noch keine Buchungen für diese Person.</div>';
+  $('#tx-show-all').hidden = txs.length <= TX_PAGE;
+  $('#tx-show-all').textContent = txExpanded ? 'Weniger anzeigen' : `Alle ${txs.length} anzeigen`;
 }
+$('#tx-show-all').addEventListener('click', () => { txExpanded = !txExpanded; loadTransactions(); });
 
-async function refreshSonBalance() {
-  const res = await fetch('/api/admin/sons');
-  const data = await res.json();
-  sons = data.sons;
-  renderSonPicker();
-  document.querySelectorAll('.son-pill').forEach(btn => {
-    btn.classList.toggle('active', Number(btn.dataset.id) === activeSonId);
-  });
-}
+$('#tx-list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del-tx]');
+  if (!b || !confirmButton(b)) return;
+  await api(`/api/admin/transactions?id=${b.dataset.delTx}`, { method: 'DELETE' });
+  toast('Buchung gelöscht');
+  await Promise.all([loadTransactions(), refreshSons()]);
+});
 
-document.getElementById('tx-form').addEventListener('submit', async (e) => {
+$('#tx-form').addEventListener('submit', async e => {
   e.preventDefault();
   const body = {
     sonId: activeSonId,
-    date: document.getElementById('tx-date').value,
-    type: document.getElementById('tx-type').value,
-    amount: parseFloat(document.getElementById('tx-amount').value),
-    note: document.getElementById('tx-note').value
+    date: $('#tx-date').value,
+    type: $('#tx-type').value,
+    amount: Number($('#tx-amount').value),
+    note: $('#tx-note').value
   };
-  await fetch('/api/admin/transactions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  document.getElementById('tx-amount').value = '';
-  document.getElementById('tx-note').value = '';
-  await loadTransactions();
-  await refreshSonBalance();
+  const res = await api('/api/admin/transactions', { method: 'POST', body });
+  if (!res.ok) { toast(res.data.error || 'Buchung konnte nicht gespeichert werden', 'error'); return; }
+  $('#tx-amount').value = '';
+  $('#tx-note').value = '';
+  txHint();
+  toast(`Buchung für ${activeSon().name} gespeichert`);
+  await Promise.all([loadTransactions(), refreshSons()]);
 });
 
-document.getElementById('rate-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const annualRate = parseFloat(document.getElementById('rate-input').value) / 100;
-  await fetch('/api/admin/sons', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sonId: activeSonId, annualRate })
-  });
-  await refreshSonBalance();
-});
-
-async function loadProducts() {
-  const res = await fetch('/api/admin/products');
-  const data = await res.json();
-  products = data.products || [];
-  renderProducts();
+// ---------- Automatische Buchungen ----------
+async function loadRecurring() {
+  const res = await api('/api/admin/recurring');
+  const list = (res.data.recurring || []).filter(r => r.son_id === activeSonId);
+  $('#rec-list').innerHTML = list.length ? list.map(r => `<div class="list-row">
+      <div><div class="t">${escapeHtml(r.note || TX_LABELS[r.type])}</div><div class="s">${TX_LABELS[r.type]} · <b class="num">${eur(r.amount)}</b> · jeden 1. des Monats</div></div>
+      <div class="row-actions">${deleteBtn('data-del-rec', r.id, 'Automatische Buchung löschen')}</div></div>`).join('')
+    : '<div class="empty">Keine automatische Buchung für diese Person.</div>';
 }
 
-function renderProducts() {
-  const body = document.getElementById('product-body');
-  const empty = document.getElementById('product-empty');
+$('#rec-list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del-rec]');
+  if (!b || !confirmButton(b)) return;
+  await api(`/api/admin/recurring?id=${b.dataset.delRec}`, { method: 'DELETE' });
+  toast('Automatische Buchung gelöscht');
+  await loadRecurring();
+});
 
-  if (!products.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-  } else {
-    empty.style.display = 'none';
+$('#rec-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = { sonId: activeSonId, type: $('#rec-type').value, amount: Number($('#rec-amount').value), note: $('#rec-note').value };
+  const res = await api('/api/admin/recurring', { method: 'POST', body });
+  if (!res.ok) { toast(res.data.error || 'Konnte nicht angelegt werden', 'error'); return; }
+  e.target.reset();
+  toast('Automatische Buchung angelegt');
+  await loadRecurring();
+});
 
-    body.innerHTML = products.map(p => {
-      const infoBtn = p.description ? `<button class="info-btn" data-desc="${p.id}" type="button" title="Info">ⓘ</button>` : '';
-      const descRow = p.description
-        ? `<tr id="desc-${p.id}" style="display:none;"><td colspan="5"><div class="product-description">${escapeHtml(p.description)}</div></td></tr>`
-        : '';
-      return `<tr style="${p.active ? '' : 'opacity:0.5;'}">
-        <td>${escapeHtml(p.name)}${infoBtn}</td>
-        <td>${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'}</td>
-        <td>${(p.apy * 100).toFixed(2).replace('.', ',')}%</td>
-        <td>${frequencyLabels[p.interest_frequency]}</td>
-        <td><button class="info-btn product-edit" data-id="${p.id}" type="button" title="Bearbeiten">✎</button></td>
-        <td><button class="tx-delete" data-id="${p.id}">Löschen</button></td>
-      </tr>${descRow}`;
-    }).join('');
+// ---------- Nachrichten ----------
+function populateRecipients() {
+  const prev = $('#msg-to').value;
+  $('#msg-to').innerHTML = '<option value="">Alle</option>' + sons.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+  if (prev && sons.some(s => String(s.id) === prev)) $('#msg-to').value = prev;
+}
 
-    body.querySelectorAll('.tx-delete').forEach(btn => {
-      btn.addEventListener('click', async () => {
-        await fetch(`/api/admin/products?id=${btn.dataset.id}`, { method: 'DELETE' });
-        if (editingProductId === Number(btn.dataset.id)) cancelProductEdit();
-        await loadProducts();
-      });
-    });
+function renderMsgPreview() {
+  const to = $('#msg-to').value;
+  const target = to ? sons.find(s => String(s.id) === to) : activeSon();
+  if (!target) return;
+  const from = target.sender_name ? `Nachricht von ${escapeHtml(target.sender_name)}` : 'Neue Nachricht';
+  $('#msg-preview').innerHTML = `<div class="ico">${svgIcon('message', 16)}</div>
+    <div><b>${from}</b><span>${escapeHtml($('#msg-body').value || '…')}</span>${to ? '' : `<br><span style="font-size:12px">So sieht es ${escapeHtml(target.name)}. Jede Person sieht ihren eigenen Absendernamen.</span>`}</div>`;
+}
+$('#msg-body').addEventListener('input', renderMsgPreview);
+$('#msg-to').addEventListener('change', renderMsgPreview);
 
-    body.querySelectorAll('.product-edit').forEach(btn => {
-      btn.addEventListener('click', () => startProductEdit(Number(btn.dataset.id)));
-    });
+async function loadMessages() {
+  const res = await api('/api/admin/messages');
+  messages = res.data.messages || [];
+  $('#msg-list').innerHTML = messages.length ? '<div class="preview-label" style="margin-bottom:4px">Gesendet</div>' + messages.map(m => `<div class="list-row">
+      <div style="min-width:0"><div class="t">${escapeHtml(m.body)}</div><div class="s">an ${escapeHtml(m.son_name || 'alle')} · ${dateFmt(m.created_at)}</div></div>
+      <div class="row-actions">${deleteBtn('data-del-msg', m.id, 'Nachricht löschen')}</div></div>`).join('')
+    : '';
+}
 
-    body.querySelectorAll('.info-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const row = document.getElementById(`desc-${btn.dataset.desc}`);
-        row.style.display = row.style.display === 'none' ? '' : 'none';
-      });
-    });
-  }
+$('#msg-list').addEventListener('click', async e => {
+  const b = e.target.closest('[data-del-msg]');
+  if (!b || !confirmButton(b)) return;
+  await api(`/api/admin/messages?id=${b.dataset.delMsg}`, { method: 'DELETE' });
+  toast('Nachricht gelöscht');
+  await loadMessages();
+});
 
-  const select = document.getElementById('investment-product');
-  const activeProducts = products.filter(p => p.active);
-  select.innerHTML = activeProducts.length
-    ? activeProducts.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${(p.apy * 100).toFixed(2).replace('.', ',')}%, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('')
+$('#msg-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const to = $('#msg-to').value;
+  const res = await api('/api/admin/messages', { method: 'POST', body: { sonId: to ? Number(to) : null, body: $('#msg-body').value } });
+  if (!res.ok) { toast(res.data.error || 'Nachricht konnte nicht gesendet werden', 'error'); return; }
+  $('#msg-body').value = '';
+  renderMsgPreview();
+  toast(to ? `Nachricht an ${sons.find(s => String(s.id) === to).name} gesendet` : 'Nachricht an alle gesendet');
+  await loadMessages();
+});
+
+// ---------- Investitionen ----------
+async function loadInvestments() {
+  const res = await api(`/api/admin/investments?sonId=${activeSonId}`);
+  const list = res.data.investments || [];
+  $('#inv-list').innerHTML = list.length ? list.map(inv => `<div class="list-row ${inv.status === 'active' ? '' : 'muted'}">
+      <div style="min-width:0"><div class="t">${escapeHtml(inv.product_name)}</div>
+      <div class="s">${eur(inv.principal)} angelegt · aktuell <b class="num">${eur(inv.balance)}</b> · ${inv.status === 'active' ? 'fällig ' + dateFmt(inv.maturity_date) : 'ausgezahlt'}</div></div>
+      <span class="tag">${inv.status === 'active' ? 'aktiv' : 'ausgezahlt'}</span></div>`).join('')
+    : '<div class="empty">Keine Investitionen für diese Person.</div>';
+}
+
+$('#inv-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const body = { sonId: activeSonId, productId: Number($('#inv-product').value), amount: Number($('#inv-amount').value) };
+  const res = await api('/api/admin/investments', { method: 'POST', body });
+  if (!res.ok) { toast(res.data.error || 'Investition konnte nicht angelegt werden', 'error'); return; }
+  $('#inv-amount').value = '';
+  toast('Investition angelegt');
+  await Promise.all([loadInvestments(), loadTransactions(), refreshSons()]);
+});
+
+// ---------- Produkte ----------
+async function loadProducts() {
+  const res = await api('/api/admin/products');
+  products = res.data.products || [];
+  $('#prod-list').innerHTML = products.length ? products.map(p => `<div class="list-row ${p.active ? '' : 'muted'}">
+      <div style="min-width:0"><div class="t">${escapeHtml(p.name)}</div>
+      <div class="s">${pct(p.apy)} · ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'} · Zinsen ${FREQ_LABELS[p.interest_frequency]}${p.active ? '' : ' · inaktiv'}</div></div>
+      <div class="row-actions">
+        <button type="button" class="icon-sm edit" data-edit-prod="${p.id}" aria-label="Produkt bearbeiten">${svgIcon('edit')}</button>
+        ${deleteBtn('data-del-prod', p.id, 'Produkt löschen')}
+      </div></div>`).join('')
+    : '<div class="empty">Noch keine Anlageprodukte.</div>';
+  const active = products.filter(p => p.active);
+  $('#inv-product').innerHTML = active.length
+    ? active.map(p => `<option value="${p.id}">${escapeHtml(p.name)} (${pct(p.apy)}, ${p.lock_days === 0 ? 'flexibel' : p.lock_days + ' Tage'})</option>`).join('')
     : '<option value="">Kein Produkt verfügbar</option>';
 }
 
 function startProductEdit(id) {
-  const p = products.find(pr => pr.id === id);
+  const p = products.find(x => x.id === id);
   if (!p) return;
   editingProductId = id;
-  document.getElementById('product-name').value = p.name;
-  document.getElementById('product-lock-days').value = p.lock_days;
-  document.getElementById('product-apy').value = (p.apy * 100).toFixed(2);
-  document.getElementById('product-frequency').value = p.interest_frequency;
-  document.getElementById('product-description').value = p.description || '';
-  document.getElementById('product-submit').textContent = 'Produkt speichern';
-  document.getElementById('product-cancel-edit').style.display = 'block';
-  document.getElementById('product-form').scrollIntoView({ behavior: 'smooth', block: 'center' });
+  $('#prod-name').value = p.name;
+  $('#prod-lock').value = p.lock_days;
+  $('#prod-apy').value = (p.apy * 100).toFixed(2);
+  $('#prod-freq').value = p.interest_frequency;
+  $('#prod-desc').value = p.description || '';
+  $('#prod-title').textContent = `Produkt bearbeiten: ${p.name}`;
+  $('#prod-submit').textContent = 'Produkt speichern';
+  $('#prod-cancel').hidden = false;
+  $('#prod-form').scrollIntoView({ behavior: prefersReducedMotion ? 'auto' : 'smooth', block: 'center' });
 }
 
 function cancelProductEdit() {
   editingProductId = null;
-  document.getElementById('product-form').reset();
-  document.getElementById('product-submit').textContent = 'Produkt anlegen';
-  document.getElementById('product-cancel-edit').style.display = 'none';
+  $('#prod-form').reset();
+  $('#prod-title').textContent = 'Anlageprodukte (für alle)';
+  $('#prod-submit').textContent = 'Produkt anlegen';
+  $('#prod-cancel').hidden = true;
 }
+$('#prod-cancel').addEventListener('click', cancelProductEdit);
 
-document.getElementById('product-cancel-edit').addEventListener('click', cancelProductEdit);
+$('#prod-list').addEventListener('click', async e => {
+  const edit = e.target.closest('[data-edit-prod]');
+  if (edit) { startProductEdit(Number(edit.dataset.editProd)); return; }
+  const del = e.target.closest('[data-del-prod]');
+  if (!del || !confirmButton(del)) return;
+  const res = await api(`/api/admin/products?id=${del.dataset.delProd}`, { method: 'DELETE' });
+  if (!res.ok) { toast(res.data.error || 'Produkt konnte nicht gelöscht werden', 'error'); return; }
+  if (editingProductId === Number(del.dataset.delProd)) cancelProductEdit();
+  toast('Produkt gelöscht');
+  await loadProducts();
+});
 
-document.getElementById('product-form').addEventListener('submit', async (e) => {
+$('#prod-form').addEventListener('submit', async e => {
   e.preventDefault();
   const body = {
-    name: document.getElementById('product-name').value,
-    lockDays: parseInt(document.getElementById('product-lock-days').value, 10),
-    apy: parseFloat(document.getElementById('product-apy').value) / 100,
-    interestFrequency: document.getElementById('product-frequency').value,
-    description: document.getElementById('product-description').value
+    name: $('#prod-name').value,
+    lockDays: parseInt($('#prod-lock').value, 10),
+    apy: Math.round(Number($('#prod-apy').value) * 100) / 10000,
+    interestFrequency: $('#prod-freq').value,
+    description: $('#prod-desc').value
   };
-  if (editingProductId) {
-    await fetch('/api/admin/products', {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...body, id: editingProductId })
-    });
-  } else {
-    await fetch('/api/admin/products', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-  }
+  const res = editingProductId
+    ? await api('/api/admin/products', { method: 'PATCH', body: { ...body, id: editingProductId } })
+    : await api('/api/admin/products', { method: 'POST', body });
+  if (!res.ok) { toast(res.data.error || 'Produkt konnte nicht gespeichert werden', 'error'); return; }
+  toast(editingProductId ? 'Produkt gespeichert' : 'Produkt angelegt');
   cancelProductEdit();
   await loadProducts();
 });
 
-async function loadInvestments() {
-  const res = await fetch(`/api/admin/investments?sonId=${activeSonId}`);
-  const data = await res.json();
-  renderInvestments(data.investments || []);
-}
-
-function renderInvestments(investments) {
-  const body = document.getElementById('investment-body');
-  const empty = document.getElementById('investment-empty');
-
-  if (!investments.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  body.innerHTML = investments.map(inv => `<tr style="${inv.status === 'paid_out' ? 'opacity:0.5;' : ''}">
-      <td>${escapeHtml(inv.product_name)}</td>
-      <td>${eur(inv.principal)}</td>
-      <td>${eur(inv.balance)}</td>
-      <td>${dateFmt(inv.maturity_date)}</td>
-      <td>${inv.status === 'active' ? 'aktiv' : 'ausgezahlt'}</td>
-    </tr>`).join('');
-}
-
-document.getElementById('investment-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const messageEl = document.getElementById('investment-message');
-  messageEl.textContent = '';
-  const body = {
-    sonId: activeSonId,
-    productId: parseInt(document.getElementById('investment-product').value, 10),
-    amount: parseFloat(document.getElementById('investment-amount').value)
-  };
-  const res = await fetch('/api/admin/investments', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  const data = await res.json();
-  if (res.ok) {
-    document.getElementById('investment-amount').value = '';
-    await loadInvestments();
-    await loadTransactions();
-    await refreshSonBalance();
-  } else {
-    messageEl.textContent = data.error || 'Investition konnte nicht angelegt werden.';
-  }
-});
-
-function populateMessageRecipients() {
-  const select = document.getElementById('message-recipient');
-  select.innerHTML = '<option value="">Alle Söhne</option>' +
-    sons.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
-}
-
-async function loadMessages() {
-  const res = await fetch('/api/admin/messages');
-  const data = await res.json();
-  renderMessages(data.messages || []);
-}
-
-function renderMessages(messages) {
-  const body = document.getElementById('message-body-list');
-  const empty = document.getElementById('message-empty');
-
-  if (!messages.length) {
-    body.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
-  empty.style.display = 'none';
-
-  body.innerHTML = messages.map(m => `<tr>
-      <td>${escapeHtml(m.son_name || 'Alle')}</td>
-      <td>${escapeHtml(m.body)}</td>
-      <td><button class="tx-delete" data-id="${m.id}">Löschen</button></td>
-    </tr>`).join('');
-
-  body.querySelectorAll('.tx-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      await fetch(`/api/admin/messages?id=${btn.dataset.id}`, { method: 'DELETE' });
-      await loadMessages();
-    });
-  });
-}
-
-document.getElementById('message-form').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const recipient = document.getElementById('message-recipient').value;
-  const body = {
-    sonId: recipient ? parseInt(recipient, 10) : null,
-    body: document.getElementById('message-body').value
-  };
-  await fetch('/api/admin/messages', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body)
-  });
-  document.getElementById('message-form').reset();
-  await loadMessages();
-});
-
-checkSession();
+start();

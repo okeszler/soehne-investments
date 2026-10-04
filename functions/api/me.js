@@ -4,7 +4,7 @@ export async function onRequestGet({ request, env }) {
   const session = await requireSonSession(request, env);
   if (!session) return json({ error: 'Nicht eingeloggt' }, { status: 401 });
 
-  const son = await env.DB.prepare('SELECT id, name, annual_rate, kest_rate FROM sons WHERE id = ?')
+  const son = await env.DB.prepare('SELECT id, name, annual_rate, kest_rate, cashback_rate, sender_name, palette, created_at FROM sons WHERE id = ?')
     .bind(session.sonId).first();
   if (!son) return json({ error: 'Nicht gefunden' }, { status: 404 });
 
@@ -78,6 +78,10 @@ export async function onRequestGet({ request, env }) {
     name: son.name,
     annualRate: son.annual_rate,
     kestRate: son.kest_rate,
+    cashbackRate: son.cashback_rate,
+    senderName: son.sender_name || '',
+    palette: son.palette || 'blau',
+    memberSince: son.created_at,
     balance,
     cashBalance,
     flexAccruedInterest,

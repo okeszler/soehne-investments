@@ -7,15 +7,20 @@ Nachrichten ein.
 
 ## Aufbau
 
-- **Sohn-Ansicht** (`/index.html`): PIN-Login, Gesamtkontostand (FLEX +
-  Investitionen), Tageszins, Verlaufsgrafik, Liste laufender Investitionen
-  (Restzeit, aktueller Wert, Zinsen bei Endfälligkeit), Möglichkeit selbst in ein
-  Anlageprodukt zu investieren, freier Zinseszinsrechner, FLEX-Bewegungen,
-  eigene PIN ändern, In-App-Nachrichten vom Admin, optionale Push-Benachrichtigungen.
-- **Admin-Ansicht** (`/admin.html`): eigene PIN, FLEX-Buchungen anlegen/löschen,
-  Jahreszins pro Sohn einstellen, automatische monatliche FLEX-Buchungen (z.B.
-  Taschengeld), Anlageprodukte anlegen/bearbeiten/löschen, Investitionen für
-  einen Sohn anlegen, Nachrichten an einen Sohn oder alle senden.
+- **Sohn-Ansicht** (`/index.html`): PIN-Login per Tastenfeld, fünf Bereiche
+  (Übersicht, Anlegen, Konto, Rechner, Profil) — am Handy als Tab-Leiste unten, am
+  Computer als Seitenleiste. Übersicht mit Gesamtkapital (zählt hoch und wächst live
+  mit den Zinsen), Aufteilung FLEX/Investiert, Verlaufsgrafik, laufenden
+  Investitionen, Zinsen und Cashback seit Start und den letzten Bewegungen.
+  Selbst investieren, Auszahlung beantragen, Zinseszinsrechner, PIN ändern,
+  In-App-Nachrichten, optionale Push-Benachrichtigungen. Hell/Dunkel (folgt sonst
+  dem System) und ein selbst gewähltes Farbschema (Nachtblau, Pflaume, Graphit,
+  Bordeaux).
+- **Admin-Ansicht** (`/admin.html`): eigene PIN, pro Person **Konditionen**
+  (FLEX-Zins, Cashback ein/aus und Satz, KESt-Satz, Absendername in der App) mit
+  Änderungsverlauf, FLEX-Buchungen anlegen/löschen, automatische monatliche
+  Buchungen (z.B. Taschengeld), Anlageprodukte anlegen/bearbeiten/löschen,
+  Investitionen anlegen, Nachrichten an eine Person oder alle senden.
 - **Backend**: Cloudflare Pages Functions + D1.
 - **Cron-Worker** (`cron-worker/`, separat deployt): täglich/monatlich
   automatisierte Buchungen — siehe unten.
@@ -44,6 +49,13 @@ Tabelle an bzw. erweitert das Schema):
 for f in migrations/*.sql; do
   wrangler d1 execute soehne-investment --remote --file="$f"
 done
+```
+
+Bei einer bestehenden Installation reicht die jeweils neue Migration, z.B. für das
+Redesign (Cashback-Satz, Absendername und Farbschema pro Person):
+
+```bash
+wrangler d1 execute soehne-investment --remote --file=migrations/014_son_settings.sql
 ```
 
 ### 3. PINs für Moritz und Florian erzeugen
